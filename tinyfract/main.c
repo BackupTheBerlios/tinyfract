@@ -269,9 +269,9 @@ int main(int argc, char* argv[])
 	}
 
 	/* Load output facility. */
-	if (!(output_facility=load_plugin_facility("./plugins",plugin_facility_output,"aa")))
+	if (!(output_facility=load_plugin_facility(plugin_path,plugin_facility_output,output_method)))
 	{
-		fprintf(stderr,"%s: Could not load output facility aa.\n",argv[0]);
+		fprintf(stderr,"%s: Could not load output facility %s.\n",argv[0],output_method);
 		exit(EXIT_FAILURE);
 	}
 
