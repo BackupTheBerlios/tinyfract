@@ -10,15 +10,14 @@
 
 void *load_symbol(const char* plugin_path, const char* symbol)
 { 
-	struct dirent* dir_stream;
+	struct dirent* directory_entry;
 	void*          dl_handle;
-	DIR*           plugin_dir;
 	char*          plugin_directory;
+	DIR*           plugin_directory_handle;
 	char*          plugin_path_help;
 	char*          plugin_path_scratch;
 	output_initialize_view_port_t* fp=NULL;
 	
-
 	if ((plugin_path_scratch=malloc(strlen(plugin_path)+1))==NULL)
 	{
 		perror("plugin_loader, malloc");
@@ -27,10 +26,17 @@ void *load_symbol(const char* plugin_path, const char* symbol)
 	plugin_path_help=plugin_path_scratch;
 	strcpy(plugin_path_scratch,plugin_path);
 
+	#ifdef DEBUG
+	fprintf(stderr,"Plugin path is %s\n",plugin_path_help);
+	#endif
+
 	plugin_directory=strtok(plugin_path_help,":");
 	do
 	{
-		if ((plugin_dir=opendir(plugin_directory))==NULL)
+		#ifdef DEBUG
+		fprintf(stderr,"Considering plugin directory %s\n",plugin_directory);
+		#endif
+		if ((plugin_directory_handle=opendir(plugin_directory))==NULL)
 		{
 			switch (errno)
 			{
@@ -48,23 +54,20 @@ void *load_symbol(const char* plugin_path, const char* symbol)
 		}
 		else
 		{
-			do
-			{	
-				dl_handle=dlopen(plugin_directory, RTLD_NOW); 
-				if (dl_handle)
-				{
-					printf("%s\n",dlerror());
-					exit(EXIT_FAILURE);
-				}
-				else
+			while ((directory_entry=readdir(plugin_directory_handle))!=NULL)
+			{
+				dl_handle=dlopen(directory_entry->d_name,RTLD_NOW);
+				if (dl_handle!=NULL)
 				{
 					fp=dlsym(dl_handle,symbol);
 					if (fp!=NULL) goto end;
 					dlclose(dl_handle);
 						
 				}
+				#ifdef DEBUG
+				else fprintf(stderr,"%s\n",dlerror());
+				#endif
 			}
-			while (dir_stream);
 		}
 	}
 	while ((plugin_directory=strtok(NULL,":"))!=NULL);
