@@ -7,13 +7,12 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: aa.so lambda.so mandelbrot.so
-#output_xlib.so
+all: aa.so lambda.so mandelbrot.so x11.so
 clean:
 	$(RM) -f *.o *.so
 
 aa.o: aa.c
-	$(CC) $(CFLAGS) -I.. -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 aa.so: aa.o
 	$(LD) $(LDFLAGS) -o $@ -shared -laa $^ 
 
@@ -27,8 +26,9 @@ mandelbrot.o: mandelbrot.c
 mandelbrot.so: mandelbrot.o
 	$(LD) $(LDFLAGS) -o $@ -shared $^ 
 
-output_xlib.o: output_xlib.c
+x11.o: x11.c
 	$(CC) $(CFLAGS) -c -o $@ $<
-
-output_xlib.so: output_xlib.o
+x11.so: x11.o
 	$(LD) $(LDFLAGS) -o $@ -shared -L/usr/X11R6/lib -lXt -lXaw $^ 
+
+
