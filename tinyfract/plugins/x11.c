@@ -1,4 +1,4 @@
-#include <aalib.h>
+#include <X11/Xlib.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "../common.h"
@@ -10,13 +10,13 @@ typedef struct
 	XGCValues gcpxval;
 	GC        gcpx;
 	GC 	  gc;
-	Display   *dpy;
+	Display*  dpy;
 	XEvent    event;
 	Window    win;
  	Pixmap    pxmap;
 } x11_t;	
 
-/* Constructor and destructor for asciiart output. */
+/* Constructor and destructor for X11 output. */
 static x11_t* constructor_x11(const view_dimension_t dimension)
 {
 	x11_t* context;
@@ -25,47 +25,22 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 	if (!(context=malloc(sizeof(x11_t)))) return NULL;
 
 	/* Initialize the viewport. */
-
-
-	/* Open the display */
-	dpy=XOpenDisplay(NULL);
-	
-	/* Get some colors */
-
-	XColor mycolor;	
-	mycolor.red=65535;
-	mycolor.green=0;
-	mycolor.blue=0;
-	mycolor.flags=DoRed|DoGreen|DoBlue;
-
-	XAllocColor(dpy,DefaultColormap(context->dpy,DefaultScreen(dpy)),&mycolor);
-	blackColor=mycolor.pixel;
-		
-	//blackColor=BlackPixel(dpy,DefaultScreen(dpy));
-	whiteColor=WhitePixel(context->dpy,DefaultScreen(dpy));
-
-	/* Create the window */
-	win=XCreateSimpleWindow(context->dpy,DefaultRootWindow(dpy),0,0,200,100,0,whiteColor,whiteColor);
-	/* Pixmap */
-	pxmap=XCreatePixmap(context->dpy,DefaultRootWindow(dpy),200,100,16);
-
-	
-	/* We want to get MapNotify events */
-	XSelectInput(context->dpy,win,StructureNotifyMask);
-
-	/* "Map" the window (that is, make it appear on the screen) */
-	XMapWindow(context->dpy,win);
-
-	/* Create a "Graphics Context" */
-	gc=XCreateGC(context->dpy,win,0,NULL);
-	
-	gcpxval.function=GXset;
-	gcpx=XCreateGC(context->dpy,pxmap,GCFunction,&gcpxval);
+	/* Open the display. */
+	context->dpy=XOpenDisplay(NULL);
 	
 
-	/* Tell the GC we draw using the white color */
-	XSetForeground(context->dpy,gc,blackColor);
-	
+	/* Create the window. */
+	int bgColor=WhitePixel(context->dpy,DefaultScreen(context->dpy));
+	context->win=XCreateSimpleWindow(context->dpy,DefaultRootWindow(context->dpy),
+			0,0,200,100,0,bgColor,bgColor);
+
+	/* Create a pixmap as double buffer. */
+	context->pxmap=XCreatePixmap(context->dpy,DefaultRootWindow(context->dpy),
+			200,100,16);
+
+	/* Create a "Graphics Context" for the window and the pixmap. */
+	context->gc=XCreateGC(context->dpy,context->win,0,NULL);
+	context->gcpx=XCreateGC(context->dpy,context->pxmap,0,NULL);
 	
 	/* Return the handle. */
 	return context;
@@ -73,32 +48,55 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 
 void destructor_x11(x11_t* handle)
 {
-	x11_close(handle->context_x11);
 	free(handle);
 }
 
-/* Blit rectangle from pixelbuffer to asciiart viewport. */
+/* Blit rectangle from pixelbuffer to X11 viewport. */
 void blit_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, pixel_value values[])
 {
 }
 
 
-/* Fill rectangle in asciiart viewport with color. */
+/* Fill rectangle in X11 viewport with color. */
 void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
 {
 }
 
-/* Flush asciiart viewport */
-void flush_viewport_x11(x11_t* handle)
+/* Put pixel into X11 viewport. */
+void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_value value)
 {
-		/* Fill a rectangle */
-	XFillRectangle(handle->dpy,pxmap,gcpx,0,0,200,100);
+
+	/* Get some colors */
+	XColor mycolor;	
+	mycolor.red=65535;
+	mycolor.green=0;
+	mycolor.blue=0;
+	mycolor.flags=DoRed|DoGreen|DoBlue;
+
+	
+	XAllocColor(handle->dpy,DefaultColormap(handle->dpy,DefaultScreen(handle->dpy)),&mycolor);
+	
+	
+	/* Set color for next operation. */
+	XSetForeground(handle->dpy,handle->gc,mycolor.pixel);
+	
+	/* Fill a rectangle */
+	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,0,0,200,100);
 		/* Draw the line */
-	XDrawLine(handle->dpy,pxmap,gc,10,60,180,20);
+	XDrawLine(handle->dpy,handle->pxmap,handle->gc,10,60,180,20);
 		/* Draw a Rectangle */
-	XDrawRectangle (handle->dpy,pxmap,gc,10,10,20,20);
+	XDrawRectangle(handle->dpy,handle->pxmap,handle->gc,10,10,20,20);
 }
 
+/* Flush X11 viewport */
+void flush_viewport_x11(x11_t* handle)
+{
+	/* We want to get MapNotify events for our window. */
+	XSelectInput(handle->dpy,handle->win,StructureNotifyMask);
+
+	/* Now "map" the window (that is, make it appear on the screen). */
+	XMapWindow(handle->dpy,handle->win);
+}
 
 
 /* Enumerate plugin facilities. */
