@@ -54,6 +54,11 @@ void destructor_aa(aa_t* handle)
 	free(handle);
 }
 
+unsigned char colormap(const pixel_value value)
+{
+	return 255-(value*10)&0xff;
+}
+
 /* Blit rectangle from pixelbuffer to asciiart viewport. */
 void blit_rect_aa(aa_t* handle, const view_position_t position, const view_dimension_t dimension, pixel_value values[])
 {
@@ -63,6 +68,11 @@ void blit_rect_aa(aa_t* handle, const view_position_t position, const view_dimen
 /* Fill rectangle in asciiart viewport with color. */
 void fill_rect_aa(aa_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
 {
+	unsigned int x,y;
+
+	for (y=position.y;y<(position.y+dimension.height);y++)
+		for (x=position.x;x<(position.x+dimension.width);x++)
+			aa_putpixel(handle->context_aa,x,y,colormap(value));
 }
 
 /* Flush asciiart viewport */
@@ -75,7 +85,7 @@ void flush_viewport_aa(aa_t* handle)
 /* Put pixel into asciiart viewport. */
 void put_pixel_aa(aa_t* handle, const view_position_t position, const pixel_value value)
 {
-	aa_putpixel(handle->context_aa,position.x,position.y,255-(value*10)&0xff);
+	aa_putpixel(handle->context_aa,position.x,position.y,colormap(value));
 }
 
 
