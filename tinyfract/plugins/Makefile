@@ -14,7 +14,7 @@ clean:
 mandelbrot.o: mandelbrot.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 mandelbrot.so: mandelbrot.o
-	$(LD) $(LDFLAGS) -o $@ $^
+	$(LD) $(LDFLAGS) -o $@ -shared $^
 
 output_xlib.o: output_xlib.c
 	$(CC) $(CFLAGS) -c -o $@ $<
