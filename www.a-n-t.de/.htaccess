@@ -1,0 +1,4 @@
+ErrorDocument 404 /html/404.html
+Redirect /tv-planer/ http://www.tomodachi.de/html/ant/service/tv_planer.html
+Redirect /tv-planer http://www.tomodachi.de/html/ant/service/tv_planer.html
+Redirect /episoden-guide/ http://www.tomodachi.de/html/ant/service/ep_guide.html
