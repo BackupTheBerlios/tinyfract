@@ -117,12 +117,13 @@ int main(int argc, char* argv[])
 	view_dimension_t geometry;
 	ordinal_number_t iteration_steps;
 	real_number_t    scale;
+        const char*      plugin_path;
 
 	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
 	const int ITERATION_STEPS_SET=4;
 	const int SCALE_SET=8;
-
+	
 	int c;
 	int option_index=0;
 	static struct option long_options[] =
@@ -134,7 +135,7 @@ int main(int argc, char* argv[])
 		{"iteration-steps=",    1,0,'i'},
 		{"output-method=",      1,0,'o'},
 		{"output-parameters=",  1,0,'O'},
-		{"plugin-path",         1,0,'P'},
+		{"plugin-path=",        1,0,'P'},
 		{"render-method=",      1,0,'r'},
 		{"render-parameters=",  1,0,'R'},
 		{"scale=",              1,0,'s'},
@@ -175,6 +176,9 @@ int main(int argc, char* argv[])
 				break;
 			case 'O':
 				output_args=optarg;
+				break;
+			case 'P':
+				plugin_path=optarg;
 				break;
 			case 'r':
 				render_method=optarg;
@@ -246,7 +250,7 @@ int main(int argc, char* argv[])
 	}
 
 	/* Load fractal facility. */
-	if (!(fractal_facility=load_plugin_facility("./plugins",plugin_facility_fractal,fractal_type)))
+	if (!(fractal_facility=load_plugin_facility(plugin_path,plugin_facility_fractal,fractal_type)))
 	{
 		fprintf(stderr,"%s: Could not load fractal facility %s.\n",argv[0],fractal_type);
 		exit(EXIT_FAILURE);
