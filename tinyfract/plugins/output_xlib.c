@@ -54,8 +54,8 @@ void init_xlib()
 
   XSetForeground(mydisplay, mygc, black);          /* Farben setzen */
   XSetBackground(mydisplay, mygc, white);
+  XDrawLine (mydisplay, mywindow, mygc, 0,0,150,150);
 }
-
 /*---------------------- Callback-Funktion Quit --------------------*/
 static void Quit(w, client_data, call_data)
 Widget w;
@@ -80,6 +80,7 @@ XtPointer client_data, call_data;
   XDrawRectangle(mydisplay, mywindow, mygc,        /* 10*10 Groesse */
                  rand()%140,rand()%140,10,10);
                  /* Das sind ganz MIESE Zufallszahlen!*/
+XDrawLine (mydisplay, mywindow, mygc, 0,0,150,150);
 }
 
 /*---------------- Definiere die 3 Command-Widgets -----------------*/
@@ -142,7 +143,7 @@ char *argv[];
                   XtNfromHoriz,  (XtArgVal) w_commandbox,
                   NULL);
 
-
+ 
   XtRealizeWidget(w_parent);                   /* alles darstellen */
 
   init_xlib();           /* Initialisiere Xlib darf danach kommen! */
