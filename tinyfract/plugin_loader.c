@@ -14,9 +14,16 @@ void *load_symbol(const char* plugin_path, const char* symbol)
 	void*          dl_handle;
 	char*          plugin_directory;
 	DIR*           plugin_directory_handle;
+	char*	       plugin_file;
 	char*          plugin_path_help;
 	char*          plugin_path_scratch;
 	output_initialize_view_port_t* fp=NULL;
+
+	if (symbol==NULL)
+	{
+		fprintf(stderr,"plugin_loader: no symbol given.\n");
+		exit(EXIT_FAILURE);
+	}
 	
 	if ((plugin_path_scratch=malloc(strlen(plugin_path)+1))==NULL)
 	{
@@ -56,17 +63,37 @@ void *load_symbol(const char* plugin_path, const char* symbol)
 		{
 			while ((directory_entry=readdir(plugin_directory_handle))!=NULL)
 			{
-				dl_handle=dlopen(directory_entry->d_name,RTLD_NOW);
-				if (dl_handle!=NULL)
+				
+				if ((plugin_file=malloc(strlen(plugin_directory)+strlen(directory_entry->d_name)+2))!=NULL)
 				{
-					fp=dlsym(dl_handle,symbol);
-					if (fp!=NULL) goto end;
-					dlclose(dl_handle);
-						
+					strcpy(plugin_file,plugin_directory);
+					strcat(plugin_file,"/");
+					strcat(plugin_file,directory_entry->d_name);
+					
+					#ifdef DEBUG
+					fprintf(stderr,"Considering %s\n",plugin_file);
+					#endif
+					
+					dl_handle=dlopen(plugin_file,RTLD_NOW);
+					if (dl_handle!=NULL)
+					{
+						fp=dlsym(dl_handle,symbol);
+						if (fp!=NULL) goto end;
+						dlclose(dl_handle);
+							
+					}
+					#ifdef DEBUG
+					else fprintf(stderr,"%s\n",dlerror());
+					#endif
+
+					free(plugin_file);
+					
 				}
-				#ifdef DEBUG
-				else fprintf(stderr,"%s\n",dlerror());
-				#endif
+				else
+				{
+					perror("plugin_loader, malloc");
+					exit(EXIT_FAILURE);
+				}
 			}
 		}
 	}
@@ -74,6 +101,10 @@ void *load_symbol(const char* plugin_path, const char* symbol)
 
 end:
 	free(plugin_path_scratch);
+
+	#ifdef DEBUG
+	fprintf(stderr,"Found symbol: %p\n",fp);
+	#endif
 	return fp;
 }
 

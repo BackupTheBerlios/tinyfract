@@ -7,14 +7,14 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: output_xlib.so 
+all: mandelbrot.so output_xlib.so 
 clean:
 	$(RM) -f *.o *.so
 
 mandelbrot.o: mandelbrot.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 mandelbrot.so: mandelbrot.o
-	$(LD) $(LDFLAGS) -o $@ -shared $^
+	$(LD) $(LDFLAGS) -o $@ -shared $^ 
 
 output_xlib.o: output_xlib.c
 	$(CC) $(CFLAGS) -c -o $@ $<

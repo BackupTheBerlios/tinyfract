@@ -1,7 +1,7 @@
-#include "common.h"
+#include "../common.h"
 
 /* Mandelbrot fractal function */
-real_number_t plugin_mandelbrot_calculate(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[])
+real_number_t plugin_fractal_calculate_mandelbrot(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[])
 {
 	/* Mandelbrot fractal constants. */
 	const real_number_t  bailout_square=4;

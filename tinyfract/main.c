@@ -29,7 +29,7 @@
  * This function renders the picture. It connects the fractal function and the
  * output function.
  */
-void render(render_param_t render_param, plugin_fractal_type_calculate_f_t *fractal_calculate_point, ordinal_number_t fractal_argc, real_number_t fractal_argv[])
+void render(render_param_t render_param, plugin_fractal_calculate_function_t *fractal_calculate_point, ordinal_number_t fractal_argc, real_number_t fractal_argv[])
 {
 	complex_number_t complex_position;
 	view_position_t  render_position;
@@ -81,13 +81,21 @@ int main(int argc, char* argv[])
 	ordinal_number_t  fractal_argc=0;      /* Number of fractal parameters */ 
 	real_number_t    *fractal_argv=NULL;   /* Array of fractal parameters */
 	
-	plugin_fractal_type_calculate_f_t *plugin_fractal_type_calculate_f=NULL; /* Pointer to fractal calculation function */
+	plugin_fractal_calculate_function_t *plugin_fractal_calculate_function=NULL; /* Pointer to fractal calculation function */
 	char             *output_method=NULL;  /* Output method selected from command line or user input */
 	char             *output_args=NULL;    /* Output parameters from command line or user input */
 
 #ifdef DEBUG
 	int debug_i;
 #endif
+
+	char            *plugin_fractal_calculate_function_name;
+
+	
+	const char plugin_name[]   ="plugin_";
+	const char fractal_name[]  ="fractal_";
+	const char calculate_name[]="calculate_";
+	
 
 	/* Parse options. */
 	int c;
@@ -221,19 +229,45 @@ int main(int argc, char* argv[])
 	fflush(stderr);
 #endif
 
+	/* Test if fractal type was given. */
+	if (fractal_type==NULL)
+	{
+		fprintf(stderr,"%s: You have to specify a fractal type.\n",argv[0]);
+		exit(EXIT_FAILURE);
+	}
 	
 	/* Load fractal function. */
-	if ((plugin_fractal_type_calculate_f=load_symbol("./plugins",fractal_type))==NULL)
+	if ((plugin_fractal_calculate_function_name=
+		malloc(strlen(plugin_name)+strlen(fractal_name)+strlen(calculate_name)
+			+strlen(fractal_type))+1)==NULL)
+	{
+		perror("fractal_function, malloc");
+		exit(EXIT_FAILURE);
+	}
+	
+	strcpy(plugin_fractal_calculate_function_name,plugin_name);
+	strcat(plugin_fractal_calculate_function_name,fractal_name);
+	strcat(plugin_fractal_calculate_function_name,calculate_name);
+	strcat(plugin_fractal_calculate_function_name,fractal_type);
+
+	#ifdef DEBUG
+	fprintf(stderr,"Considering %s\n",plugin_fractal_calculate_function_name);
+	#endif
+	
+	if ((plugin_fractal_calculate_function=load_symbol("./plugins",fractal_type))==NULL)
+	//if ((plugin_fractal_calculate_function=load_symbol("./plugins",plugin_fractal_calculate_function_name))==NULL)
 	{
 		fprintf(stderr,"%s: Could not load fractal function %s.\n",argv[0],fractal_type);
 		exit(EXIT_FAILURE);
 	}
 
 
-	
-	
+	#ifdef DEBUG
+	fprintf(stderr,"Render function %p\n",plugin_fractal_calculate_function);
+	#endif
+			
 	/* Render the fractal. */
-	render(render_param,plugin_fractal_type_calculate_f,fractal_argc,fractal_argv); 
+	//render(render_param,plugin_fractal_type_calculate_f,fractal_argc,fractal_argv); 
 
 	/* That was it. Bye! */
 	exit(EXIT_SUCCESS);
