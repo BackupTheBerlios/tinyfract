@@ -7,9 +7,8 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: lambda.so mandelbrot.so
-#all: aa.so lambda.so mandelbrot.so
-#output_xlib.so
+all: aa.so lambda.so mandelbrot.so
+#output_xlib.so 
 clean:
 	$(RM) -f *.o *.so
 
