@@ -107,10 +107,15 @@ proc render {} \
 
 	if ([regexp "xxx" $plug_path]==1) \
 	{
-		set test 0
-		wm deiconify .error
-		.error.message configure -text "You did not specified a plugin path but if you have difined a plugin path\nin the environmental variable TINYFRACT_PLUGIN_PATH it is no problem"
-		tkwait variable test
+		catch {
+		if ( [ exec ./existenv TINYFRACT_PLUGIN_PATH ] == 0 ) \
+		{
+			set test 0
+			wm deiconify .error
+			.error.message configure -text "You did not specify a plugin path you can difiny a plugin path\nin the environmental variable TINYFRACT_PLUGIN_PATH or in the entry in this programm"
+			tkwait variable test
+			return
+		} }
 		set plug_path ""
 	} else \
 	{
@@ -137,10 +142,15 @@ proc render {} \
 
 	if ([regexp "xxx" $out_meth]==1) \
 	{
-		set test 0
-		wm deiconify .error
-		.error.message configure -text "You did not specified an output method but if you have difined a output method\nin the environmental variable TINYFRACT_OUTPUT_METHOD it is no problem"
-		tkwait variable test
+		catch {
+		if ( [ exec ./existenv TINYFRACT_OUTPUT_METHOD ] == 0 ) \
+		{
+			set test 0
+			wm deiconify .error
+			.error.message configure -text "You did not specifiy an output method you can difine a output method\nin the environmental variable TINYFRACT_OUTPUT_METHOD or in the entry in this programm."
+			tkwait variable test
+			return
+		} }
 		set out_meth ""
 	} else \
 	{
@@ -150,10 +160,15 @@ proc render {} \
 
 	if ([regexp "xxx" $ren_meth]==1) \
 	{
-		set test 0
-		wm deiconify .error
-		.error.message configure -text "You did not specified a render method but if you have difined a render method\nin the environmental variable TINYFRACT_RENDER_METHOD it is no problem"
-		tkwait variable test
+		catch {
+		if ( [ exec ./existenv TINYFRACT_RENDER_METHOD ] == 0 ) \
+		{
+			set test 0
+			wm deiconify .error
+			.error.message configure -text "You did not specifiy a render method you can difine a render method\nin the environmental variable TINYFRACT_RENDER_METHOD or in the entry in thos programm."
+			tkwait variable test
+			return
+		} }
 		set ren_meth ""
 	} else \
 	{
@@ -179,7 +194,6 @@ proc render {} \
 		set $ren_param ""
 	} else \
 	{
-		puts hallo
 		set help $ren_param
 		set ren_param "-R$help"
 	}
