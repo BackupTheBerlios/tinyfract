@@ -10,17 +10,20 @@ void *load_plugins(char* plugin_path, char* output_method)
 	
 	while plugin in plugin_path
 	{
-
-	handle=dlopen(plugin, RTLD_NOW); 
+	
+	
+		
+	handle=dlopen(directory, RTLD_NOW); 
 	if(handle)
 	{
 		printf("%s\n",dlerror());
 		exit(EXIT_FAILURE);
 	}
-
-	fp=dlsym(handle,output_method);
-
-	if fp=!NULL break;
+	else
+	{
+		fp=dlsym(handle,output_method);
+		if fp=!NULL break;
+	}
 	
 	}
 
@@ -29,8 +32,6 @@ void *load_plugins(char* plugin_path, char* output_method)
 		printf("Error: output method %s does not exist.",output_method);
 	}
 
-	
-	fp(hdjksdfh,fgjhdfsjkg);
 	
 	return fp;
 }
