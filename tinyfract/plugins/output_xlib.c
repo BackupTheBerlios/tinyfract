@@ -1,82 +1,63 @@
-/* XHelloWorld, (c) 1997 Linux-Magazin, P.Murmann */
- 
- #include <stdio.h>
- #include <X11/Xlib.h>
- #include <X11/Xutil.h>
- 
- char hello[] = {"."};
- char mystring[] = {":D"};
- 
- main(int argc, char *argv[])
- {
-   Display *mydpy;
-   Window mywin;
-   Drawable d;
-   GC mygc;
-   XEvent myevent;
-   KeySym mykey;
-   XSizeHints myhint;
-   int myscreen;
-   unsigned long fg, bg;
-   int i;
-   char text[10];
-   int loop;
- 
-   if(!(mydpy = XOpenDisplay(NULL))) {
-     (void)fprintf(stderr, "Unable to open display: %s\n",
-       XDisplayString(NULL));
-     exit(1);
-   }
-   myscreen = DefaultScreen(mydpy);
-   bg = WhitePixel(mydpy, myscreen);
-   fg = BlackPixel(mydpy, myscreen);
-   myhint.x = 200;
-   myhint.y = 100;
-   myhint.width = 256;
-   myhint.height = 256;
-   myhint.flags = PPosition | PSize;
-   mywin = XCreateSimpleWindow(mydpy,
-     DefaultRootWindow(mydpy),
-     myhint.x, myhint.y, myhint.width, myhint.height,
-    150, fg, bg);
-   XSetStandardProperties(mydpy, mywin, hello, hello,
-     None, argv, argc, &myhint);
-   mygc = XCreateGC(mydpy, mywin, 0, 0);
-   XSetForeground(mydpy, mygc, fg);
-   XSetBackground(mydpy, mygc, bg);
-   XSelectInput(mydpy, mywin,
-     ButtonPressMask | KeyPressMask | ExposureMask);
-   XMapRaised(mydpy, mywin);
-   loop = 1;
- 
-   while(loop) {
-     XNextEvent(mydpy, &myevent);
-     switch(myevent.type) {
-     case Expose:
-       //if(myevent.xexpose.count == 0)
-         //XDrawPixel
-	XDrawPoint(mydpy, fg, mygc, 10,10);
-       
-       break;
-     case MappingNotify:
-       XRefreshKeyboardMapping(&myevent);
-       break;
-     case ButtonPress:
-       XDrawImageString(myevent.xexpose.display,
-         myevent.xexpose.window, mygc,
-    myevent.xbutton.x, myevent.xbutton.y,
-    mystring, strlen(mystring));
-       break;
-     case KeyPress:
-       i = XLookupString(&myevent, text, 10, &mykey, 0);
-       if(i == 1 && text[0] == 'q')
-         loop = 0;
-       break;
-     }
-     (void)printf("Got event: %i\n", myevent.type);
-   }
-   XFreeGC(mydpy, mygc);
-   XDestroyWindow(mydpy, mywin);
-   XCloseDisplay(mydpy);
-   exit(0);
- }			
+ // Written by Ch. Tronche (http://tronche.lri.fr:8000/)
+// Copyright by the author. This is unmaintained, no-warranty free software. 
+// Please use freely. It is appreciated (but by no means mandatory) to
+// acknowledge the author's contribution. Thank you.
+// Started on Thu Jun 26 23:29:03 1997
+
+//
+// Xlib tutorial: 2nd program
+// Make a window appear on the screen and draw a line inside.
+// If you don't understand this program, go to
+// http://tronche.lri.fr:8000/gui/x/xlib-tutorial/2nd-program-anatomy.html
+//
+
+#include <X11/Xlib.h> // Every Xlib program must include this
+#include <assert.h>   // I include this to test return values the lazy way
+#include <unistd.h>   // So we got the profile for 10 seconds
+
+int main(void)
+{
+	int      blackColor,whiteColor;
+	Display *dpy;
+	XEvent   event;
+	Window   win;
+
+	/* Open the display */
+	assert(dpy=XOpenDisplay(NULL));
+
+	/* Get some colors */
+	blackColor=BlackPixel(dpy,DefaultScreen(dpy));
+	whiteColor=WhitePixel(dpy,DefaultScreen(dpy));
+
+	/* Create the window */
+	win=XCreateSimpleWindow(dpy,DefaultRootWindow(dpy),0,0,200,100,0,blackColor,blackColor);
+
+	/* We want to get MapNotify events */
+	XSelectInput(dpy,win,StructureNotifyMask);
+
+	/* "Map" the window (that is, make it appear on the screen) */
+	XMapWindow(dpy,win);
+
+	/* Create a "Graphics Context" */
+	GC gc=XCreateGC(dpy,win,0,NULL);
+
+	/* Tell the GC we draw using the white color */
+	XSetForeground(dpy,gc,whiteColor);
+
+	/* Wait for the first MapNotify event */
+	do
+	    XNextEvent(dpy,&event);
+	while (event.type!=MapNotify);
+
+	/* Draw the line */
+	XDrawLine(dpy,win,gc,10,60,180,20);
+
+	/* Send the "DrawLine" request to the server */
+	XFlush(dpy);
+
+	// Wait for 10 seconds
+	sleep(10);
+
+	return 0;
+}
+
