@@ -213,9 +213,6 @@ int main(int argc, char* argv[])
 	int debug_i;
 #endif
 
-	/* Initialize render_param */
-	VARZERO(render_param);
-
 	/* Parse options. */
 	int c;
 	int option_index=0;
@@ -235,6 +232,9 @@ int main(int argc, char* argv[])
 		{"version",             0,0,'V'},
 		{0,0,0,0}
 	};
+
+	/* Initialize render_param */
+	VARZERO(render_param);
 
 	for (;;)
 	{
