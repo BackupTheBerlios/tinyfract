@@ -16,8 +16,8 @@ frame .buttons -bg pink
 
 
 label .topic.headline \
-	-text "Graphical Oberfläche for tinyfract" \
-	-font "-adobe-heveltica-bold-r-normal-*-24-*-*-*-*-*-iso8859-1" \
+	-text "Graphical user interface for tinyfract" \
+	-font "-adobe-helvetica-bold-r-normal-*-24-*-*-*-*-*-iso8859-1" \
 	-fg red
 
 label .info_first.fractal -text "Fractal type:"
@@ -105,17 +105,16 @@ proc render {} \
 		set geom "--geom=$help"
 	}
 
-	if ([regexp "xxx" $plug_path]==1) \
+	if { [regexp "xxx" $plug_path] == 1 } \
 	{
-		catch {
-		if ( [ exec ./existenv TINYFRACT_PLUGIN_PATH ] == 0 ) \
+		if { [ exec ./existenv TINYFRACT_PLUGIN_PATH ] == 0 } \
 		{
 			set test 0
 			wm deiconify .error
 			.error.message configure -text "You did not specify a plugin path you can difiny a plugin path\nin the environmental variable TINYFRACT_PLUGIN_PATH or in the entry in this programm"
 			tkwait variable test
 			return
-		} }
+		}
 		set plug_path ""
 	} else \
 	{
@@ -142,15 +141,14 @@ proc render {} \
 
 	if ([regexp "xxx" $out_meth]==1) \
 	{
-		catch {
-		if ( [ exec ./existenv TINYFRACT_OUTPUT_METHOD ] == 0 ) \
+		if { [ exec ./existenv TINYFRACT_OUTPUT_METHOD ] == 0 } \
 		{
 			set test 0
 			wm deiconify .error
 			.error.message configure -text "You did not specifiy an output method you can difine a output method\nin the environmental variable TINYFRACT_OUTPUT_METHOD or in the entry in this programm."
 			tkwait variable test
 			return
-		} }
+		}
 		set out_meth ""
 	} else \
 	{
@@ -160,15 +158,14 @@ proc render {} \
 
 	if ([regexp "xxx" $ren_meth]==1) \
 	{
-		catch {
-		if ( [ exec ./existenv TINYFRACT_RENDER_METHOD ] == 0 ) \
+		if { [ exec ./existenv TINYFRACT_RENDER_METHOD ] == 0 } \
 		{
 			set test 0
 			wm deiconify .error
 			.error.message configure -text "You did not specifiy a render method you can difine a render method\nin the environmental variable TINYFRACT_RENDER_METHOD or in the entry in thos programm."
 			tkwait variable test
 			return
-		} }
+		}
 		set ren_meth ""
 	} else \
 	{
