@@ -22,7 +22,22 @@ static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, cons
 
 	/* Set the fractal context. */
 	context->iteration_steps=iteration_steps;
-	sscanf(args,"%lf,%lf",&Re(context->lambda),&Im(context->lambda));
+	
+	
+	if(args)
+	{
+		if(strchr(args,',')==0)
+		{
+			sscanf(args,"%lf", &Re(context->lambda));
+			Im(context->lambda)=0;
+		}
+		else sscanf(args,"%lf,%lf",&Re(context->lambda),&Im(context->lambda));
+	}
+	else
+	{
+		Re(context->lambda)=1;
+		Im(context->lambda)=0;
+	}
 
  	#ifdef DEBUG 
 	fprintf(stderr,"Lambda parameter: %s,%lf,%lf\n",args,Re(context->lambda),Im(context->lambda));
