@@ -50,7 +50,7 @@ typedef struct
 	complex_number_t center;
 	view_dimension_t output_dimension;
 	ordinal_number_t iteration_steps;
-    ordinal_number_t recursion_depth;
+	ordinal_number_t recursion_depth;
 	real_number_t    scale;
 } render_param_t;
 
