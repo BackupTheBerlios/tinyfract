@@ -27,7 +27,17 @@ int main(void)
 	assert(dpy=XOpenDisplay(NULL));
 	
 	/* Get some colors */
-	blackColor=BlackPixel(dpy,DefaultScreen(dpy));
+
+	XColor mycolor;	
+	mycolor.red=65535;
+	mycolor.green=0;
+	mycolor.blue=0;
+	mycolor.flags=DoRed|DoGreen|DoBlue;
+
+	XAllocColor(dpy,DefaultColormap(dpy,DefaultScreen(dpy)),&mycolor);
+	blackColor=mycolor.pixel;
+		
+	//blackColor=BlackPixel(dpy,DefaultScreen(dpy));
 	whiteColor=WhitePixel(dpy,DefaultScreen(dpy));
 
 	/* Create the window */
@@ -73,10 +83,8 @@ int main(void)
 			case ConfigureNotify:
 			case MotionNotify:	
 			case ButtonRelease:
-			case MapWindow:
-			case MapRaised:
-			case MapSubwindows:
-			case ReparentWindow:
+			
+			default:
 			
 				/* Put fractal pixmap onto the window */
 				XCopyArea(dpy,pxmap,win,gc,0,0,200,100,0,0);
