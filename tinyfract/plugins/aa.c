@@ -15,7 +15,8 @@ typedef struct
 static aa_t* constructor_aa(const view_dimension_t dimension)
 {
 	aa_t* context;
-	
+	struct aa_hardware_params hardware_params;
+  		
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(aa_t)))) return NULL;
 
@@ -29,7 +30,10 @@ static aa_t* constructor_aa(const view_dimension_t dimension)
 	}
 
 	/* Initialize the viewport. */
-	if ((context->context_aa=aa_autoinit(&aa_defparams))==NULL)
+	VARCOPY(hardware_params,aa_defparams);
+  	hardware_params.width=dimension.width/2;	
+  	hardware_params.height=dimension.width/2;	
+	if ((context->context_aa=aa_autoinit(&hardware_params))==NULL)
         {
 		#ifdef DEBUG
 		fprintf(stderr,"aa: error initializing viewport, %s\n",aa_help);
