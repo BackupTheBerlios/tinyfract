@@ -4,6 +4,9 @@
 #include "../common.h"
 #include "../plugin.h"
 
+#define MAX_COLORS 65536
+#define COLOR_CEILING 65536
+#define iteration_steps 1000
 
 typedef struct
 {
@@ -13,12 +16,37 @@ typedef struct
 	Display*  dpy;
 	Window    win;
  	Pixmap    pxmap;
+	XColor    colors[MAX_COLORS];
 } x11_t;	
+
+
+/* Color mapping functions. */
+float R(int n, int x)
+{
+        if(x<n/3) return 1-(float)(3*x)/n;
+        else if (x>n*2/3) return (float)(3*x)/n-2;
+        else return 0;
+}
+
+float G(int n, int x)
+{
+        if(x<n/3) return (float)(3*x)/n;
+        else if (x>n*2/3) return 0;
+        else return 2-(float)(3*x)/n;
+}
+
+float B(int n, int x)
+{
+        if(x<n/3) return 0;
+        else if (x>n*2/3) return 3-(float)(3*x)/n;
+        else return (float)(3*x)/n-1;
+}
 
 /* Constructor and destructor for X11 output. */
 static x11_t* constructor_x11(const view_dimension_t dimension)
 {
 	x11_t* context;
+	int    i;
 	
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(x11_t)))) return NULL;
@@ -40,7 +68,18 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 	/* Create a "Graphics Context" for the window and the pixmap. */
 	context->gc=XCreateGC(context->dpy,context->win,0,NULL);
 	context->gcpx=XCreateGC(context->dpy,context->pxmap,0,NULL);
-	
+
+	/* Allocate colors */
+	for(i=0;i<iteration_steps;i++)
+	{
+		context->colors[i].red=  R(iteration_steps,i)*COLOR_CEILING;
+		context->colors[i].green=G(iteration_steps,i)*COLOR_CEILING;
+		context->colors[i].blue= B(iteration_steps,i)*COLOR_CEILING;
+		context->colors[i].flags=DoRed|DoGreen|DoBlue;
+		XAllocColor(context->dpy,DefaultColormap(context->dpy,DefaultScreen(context->dpy)),
+			&context->colors[i]);
+	}
+		
 	/* Return the handle. */
 	return context;
 }
@@ -73,18 +112,8 @@ void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dim
 /* Put pixel into X11 viewport. */
 void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_value value)
 {
-
-	/* Allocate colors */
-	XColor mycolor;	
-	mycolor.red=value*1000;
-	mycolor.green=0;
-	mycolor.blue=0;
-	mycolor.flags=DoRed|DoGreen|DoBlue;
-	XAllocColor(handle->dpy,DefaultColormap(handle->dpy,DefaultScreen(handle->dpy)),&mycolor);
-	
-	
 	/* Set color for next operation. */
-	XSetForeground(handle->dpy,handle->gcpx,mycolor.pixel);
+	XSetForeground(handle->dpy,handle->gcpx,handle->colors[value].pixel);
 	
 	/* Put a pixel into the double buffer. */
 	XDrawPoint(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y);
