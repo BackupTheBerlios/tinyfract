@@ -11,7 +11,6 @@ typedef struct
 	GC        gcpx;
 	GC 	  gc;
 	Display*  dpy;
-	XEvent    event;
 	Window    win;
  	Pixmap    pxmap;
 } x11_t;	
@@ -60,42 +59,72 @@ void blit_rect_x11(x11_t* handle, const view_position_t position, const view_dim
 /* Fill rectangle in X11 viewport with color. */
 void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
 {
-}
-
-/* Put pixel into X11 viewport. */
-void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_value value)
-{
-
-	/* Get some colors */
-	XColor mycolor;	
-	mycolor.red=65535;
-	mycolor.green=0;
-	mycolor.blue=0;
-	mycolor.flags=DoRed|DoGreen|DoBlue;
-
-	
-	XAllocColor(handle->dpy,DefaultColormap(handle->dpy,DefaultScreen(handle->dpy)),&mycolor);
-	
-	
-	/* Set color for next operation. */
-	XSetForeground(handle->dpy,handle->gc,mycolor.pixel);
-	
+#if 0
 	/* Fill a rectangle */
 	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,0,0,200,100);
 		/* Draw the line */
 	XDrawLine(handle->dpy,handle->pxmap,handle->gc,10,60,180,20);
 		/* Draw a Rectangle */
 	XDrawRectangle(handle->dpy,handle->pxmap,handle->gc,10,10,20,20);
+#endif
+
+}
+
+/* Put pixel into X11 viewport. */
+void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_value value)
+{
+
+	/* Allocate colors */
+	XColor mycolor;	
+	mycolor.red=value*1000;
+	mycolor.green=0;
+	mycolor.blue=0;
+	mycolor.flags=DoRed|DoGreen|DoBlue;
+	XAllocColor(handle->dpy,DefaultColormap(handle->dpy,DefaultScreen(handle->dpy)),&mycolor);
+	
+	
+	/* Set color for next operation. */
+	XSetForeground(handle->dpy,handle->gcpx,mycolor.pixel);
+	
+	/* Put a pixel into the double buffer. */
+	XDrawPoint(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y);
 }
 
 /* Flush X11 viewport */
 void flush_viewport_x11(x11_t* handle)
 {
+	XEvent event;
+
 	/* We want to get MapNotify events for our window. */
 	XSelectInput(handle->dpy,handle->win,StructureNotifyMask);
 
 	/* Now "map" the window (that is, make it appear on the screen). */
 	XMapWindow(handle->dpy,handle->win);
+
+	do
+	{
+		/* Wait for an event. */
+		XNextEvent(handle->dpy,&event);
+
+		switch (event.type)
+		{
+			case MapNotify:
+			case Expose:
+			case ButtonPress:
+			case ConfigureNotify:
+			case MotionNotify:	
+			case ButtonRelease:
+			default:
+				/* Put double buffer onto the window. */
+				XCopyArea(handle->dpy,handle->pxmap,handle->win,handle->gc,
+						0,0,200,100,0,0);
+				/* Send request to the server */
+			        XFlush(handle->dpy);
+				break;	
+		}
+		sleep(1);
+	}
+	while (1);
 }
 
 
