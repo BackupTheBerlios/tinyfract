@@ -94,6 +94,13 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	context->gcpx=XCreateGC(context->dpy,context->pxmap,0,NULL);
 
 	
+	/* Check f parameters were given. */
+	if(args==NULL)
+	{
+		fprintf(stderr,"Please insert output parameters\n");
+		exit(EXIT_FAILURE);
+	}
+
 	/* Scan the argument string. */
 	sscanf(args,"%c%d,%f%c%d,%f%c%d,%f",
 		&des[0],&mod[0],&thres[0],
