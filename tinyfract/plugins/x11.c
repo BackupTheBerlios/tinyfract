@@ -59,11 +59,11 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 	/* Create the window. */
 	int bgColor=WhitePixel(context->dpy,DefaultScreen(context->dpy));
 	context->win=XCreateSimpleWindow(context->dpy,DefaultRootWindow(context->dpy),
-			0,0,200,100,0,bgColor,bgColor);
+			0,0,dimension.width,dimension.height,0,bgColor,bgColor);
 
 	/* Create a pixmap as double buffer. */
 	context->pxmap=XCreatePixmap(context->dpy,DefaultRootWindow(context->dpy),
-			200,100,16);
+			dimension.width,dimension.height,16);
 
 	/* Create a "Graphics Context" for the window and the pixmap. */
 	context->gc=XCreateGC(context->dpy,context->win,0,NULL);
@@ -123,13 +123,17 @@ void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_va
 void flush_viewport_x11(x11_t* handle)
 {
 	XEvent event;
-
+	XWindowAttributes attributes;
+	
 	/* We want to get MapNotify events for our window. */
 	XSelectInput(handle->dpy,handle->win,StructureNotifyMask);
 
 	/* Now "map" the window (that is, make it appear on the screen). */
 	XMapWindow(handle->dpy,handle->win);
 
+	/* Get window size. */
+	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
+	
 	do
 	{
 		/* Wait for an event. */
@@ -146,7 +150,7 @@ void flush_viewport_x11(x11_t* handle)
 			default:
 				/* Put double buffer onto the window. */
 				XCopyArea(handle->dpy,handle->pxmap,handle->win,handle->gc,
-						0,0,200,100,0,0);
+						0,0,attributes.width,attributes.height,0,0);
 				/* Send request to the server */
 			        XFlush(handle->dpy);
 				break;	
