@@ -21,71 +21,6 @@
 /* Global variables */
 
 
-#if 0
-
-/*  Data structure for render arguments and other volatile data. */
-typedef struct
-{
-	complex_number_t center;
-	view_dimension_t geometry;
-	real_number_t    scale;
-} render_dumb_t;
-
-/* Constructor and destructor for dumb render function. */
-static render_dumb_t* constructor_dumb(const complex_number_t center,
-	const view_dimension_t geometry , const real_number_t scale)
-{
-	render_dumb_t* context;
-	
-	/* Get memory for the fractal context. */
-	if (!(context=malloc(sizeof(render_dumb_t)))) return NULL;
-
-	/* Set the fractal context. */
-	VARCOPY(context->center,center);
-	VARCOPY(context->geometry,geometry);
-	VARCOPY(context->scale,scale);
-
-	/* Return the handle. */
-	return context;
-}
-
-static void destructor_dumb(render_dumb_t* handle)
-{
-	free(handle);
-}
-
-
-/* Render the picture pixel by pixel in one thread; pretty dumb :-P */
-void render_dumb(render_dumb_t* handle, const plugin_facility_t* fractal_facility, void* fractal, const plugin_facility_t* output_facility, void* output)
-{
-	complex_number_t complex_position;
-	view_position_t  render_position;
-	real_number_t    scaling_factor;
-	view_position_t  shift;
-
-	/* Precalculate scaling factor and center shift for speed reasons. */
-	scaling_factor=handle->scale/handle->geometry.width;
-	shift.x=handle->geometry.width/2;
-	shift.y=handle->geometry.height/2;
-	for(render_position.y=0;render_position.y<handle->geometry.height;render_position.y++)
-	{
-		for(render_position.x=0;render_position.x<handle->geometry.width;render_position.x++)
-		{
-			Re(complex_position)=Re(handle->center)+scaling_factor*(render_position.x-shift.x);
-			Im(complex_position)=Im(handle->center)-scaling_factor*(render_position.y-shift.y);
-
-			(*output_facility->facility.output.put_pixel_function)
-				(output,render_position,(*fractal_facility->facility.fractal.calculate_function)(fractal,complex_position));
-
-			//(*output_facility->facility.output.put_pixel_function)(output,render_position,155);
-			//fprintf(stderr,"%d\n",(*fractal_facility->facility.fractal.calculate_function)(fractal,complex_position));
-
-		}
-	}
-}
-
-
-#endif
 
 
 /*
@@ -346,8 +281,6 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"Rendering the fractal.\n");
 	#endif
 	(*render_facility->facility.render.render_function)(render);
-	
-	fprintf(stderr,"TEST\n");
 	
 	/* Flush and close the output viewport. */
 	#ifdef DEBUG
