@@ -1,7 +1,7 @@
 .PHONY: all clean
 
 CC=gcc-3.0
-CFLAGS=-Wall -O2
+CFLAGS=-Wall -O2 -DDEBUG
 LD=gcc-3.0
 LDFLAGS=
 MAKE=make
@@ -15,7 +15,7 @@ clean:
 	$(MAKE) -C plugins clean
 
 main.o: main.c common.h plugin_loader.h
-	$(CC) $(CFLAGS) -c -o $@ -DDEBUG -DVERSION_INFO=\"0.1\" -DBUILD_INFO=\"1\" -DBUILD_DATE="\"$(shell date)\"" -DBUILD_HOST="\"$(shell hostname -f)\"" $<
+	$(CC) $(CFLAGS) -c -o $@ -DVERSION_INFO=\"0.1\" -DBUILD_INFO=\"1\" -DBUILD_DATE="\"$(shell date)\"" -DBUILD_HOST="\"$(shell hostname -f)\"" $<
 	
 plugin_loader.o: plugin_loader.c plugin_loader.h
 	$(CC) $(CFLAGS) -c -o $@ $<
