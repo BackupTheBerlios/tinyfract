@@ -1,20 +1,23 @@
 .PHONY: all clean
 
-CC=gcc
+CC=gcc-3.0
 CFLAGS=-O3 -fPIC
-LD=gcc
+LD=gcc-3.0
 LDFLAGS=
 RM=/bin/rm
 
 
-all: mandelbrot.so 
+all: output_xlib.so 
 clean:
 	$(RM) -f *.o *.so
 
-
 mandelbrot.o: mandelbrot.c
-	$(CC) $(CFLAGS) -c -o $@ $>
-mandelbrot.so: mandelbrot.o 
-	$(LD) $(LDFLAGS) -o $@ $^ 
+	$(CC) $(CFLAGS) -c -o $@ $<
+mandelbrot.so: mandelbrot.o
+	$(LD) $(LDFLAGS) -o $@ $^
 
+output_xlib.o: output_xlib.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
+output_xlib.so: output_xlib.o
+	$(LD) $(LDFLAGS) -o $@ -L/usr/X11R6/lib -lXt -lXaw $^ 
