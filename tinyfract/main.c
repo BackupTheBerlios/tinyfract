@@ -21,9 +21,9 @@
 /* Global variables */
 
 
+#if 0
 
-
-/* Data structure for render arguments and other volatile data. */
+/*  Data structure for render arguments and other volatile data. */
 typedef struct
 {
 	complex_number_t center;
@@ -85,8 +85,7 @@ void render_dumb(render_dumb_t* handle, const plugin_facility_t* fractal_facilit
 }
 
 
-
-
+#endif
 
 
 /*
@@ -110,7 +109,7 @@ int main(int argc, char* argv[])
 	char*                    render_method=NULL;  /* Render method selected from command line or user input. */
 	const plugin_facility_t* render_facility;     /* Render plugin facility */
 	char*                    render_args=NULL;    /* Render parameters from command line or user input. */
-
+	
 	/* Variables and constants for option parsing. */
 	complex_number_t center;
 	int              flags=0;
@@ -256,7 +255,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	
-	/* Test if output method was given */
+	/* Test if output method was given. */
 	if (!output_method)
 	{
 		if (!(output_method=getenv("TINYFRACT_OUTPUT_METHOD")))
@@ -271,6 +270,16 @@ int main(int argc, char* argv[])
 	{
 		fprintf(stderr,"%s: You have to specify a fractal type.\n",argv[0]);
 		exit(EXIT_FAILURE);
+	}
+
+	/* Test if render was given. */
+	if (!render_method)
+	{
+		if (!(render_method=getenv("TINYFRACT_RENDER_METHOD")))
+		{
+			fprintf(stderr,"%s: You have to specify a render method.\n",argv[0]);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	/* Load fractal facility. */
@@ -310,31 +319,32 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	/* Load render facility. */
+	if (!(render_facility=load_plugin_facility(plugin_path,plugin_facility_render,render_method)))
+	{
+		fprintf(stderr,"%s: Could not load render facility %s.\n",argv[0],render_method);
+		exit(EXIT_FAILURE);
+	}
 
-
-
-	/* Render the fractal. */
+	/* Initialize the render facility. */
 	#ifdef DEBUG
 	fprintf(stderr,"Initializing render facility.\n");
 	#endif
-
-	if (!(render=constructor_dumb
+	if (!(render=(*render_facility->facility.render.constructor)
 		(flags & CENTER_SET?center:fractal_facility->facility.fractal.center,
 		 geometry,
-		 flags & SCALE_SET?scale:fractal_facility->facility.fractal.scale)))
+		 flags & SCALE_SET?scale:fractal_facility->facility.fractal.scale,
+		 fractal_facility,fractal,output_facility,output)))
 	{
 		perror("could not initialize render facility");
 		exit(EXIT_FAILURE);
 	}
 
+	/* Render the fractal. */
 	#ifdef DEBUG
 	fprintf(stderr,"Rendering the fractal.\n");
 	#endif
-
-	render_dumb(render,fractal_facility,fractal,output_facility,output);
-
-
-
+	(*render_facility->facility.render.render_function)(render);
 
 
 	/* Flush and close the output viewport. */
@@ -354,8 +364,7 @@ int main(int argc, char* argv[])
 	#ifdef DEBUG
 	fprintf(stderr,"Closing render facility.\n");
 	#endif
-
-	destructor_dumb(render);
+	(*render_facility->facility.render.destructor)(render);
 
 	/* Free the output facility used. */
 	#ifdef DEBUG

@@ -49,6 +49,21 @@ typedef void (plugin_output_put_pixel_function_t)
 	 const pixel_value value);
 
 
+/* Function types for the render facility */
+typedef void* (plugin_render_constructor_t) 
+	(const complex_number_t   center,
+	 const view_dimension_t   geometry,
+	 const real_number_t      scale,
+	 const void*              fractal_facility,
+	 const void*              output_facility,
+	 const void*              fractal,
+	 const void*              output);
+typedef void (plugin_render_destructor_t)
+	 (void* handle);
+typedef void (plugin_render_function_t)
+	 (void* handle);
+
+
 /* Plugin facility types. */
 typedef struct
 {
@@ -70,9 +85,12 @@ typedef struct
 	plugin_output_put_pixel_function_t*      put_pixel_function;
 } plugin_facility_output_t;
 
+
 typedef struct
 {
-	void* render_function; 
+	plugin_render_constructor_t* constructor;
+	plugin_render_destructor_t*  destructor;
+	plugin_render_function_t*    render_function;
 } plugin_facility_render_t;
 
 
