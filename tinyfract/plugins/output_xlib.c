@@ -24,13 +24,13 @@ int main(void)
 
 	/* Open the display */
 	assert(dpy=XOpenDisplay(NULL));
-
+	
 	/* Get some colors */
 	blackColor=BlackPixel(dpy,DefaultScreen(dpy));
 	whiteColor=WhitePixel(dpy,DefaultScreen(dpy));
 
 	/* Create the window */
-	win=XCreateSimpleWindow(dpy,DefaultRootWindow(dpy),0,0,200,100,0,blackColor,blackColor);
+	win=XCreateSimpleWindow(dpy,DefaultRootWindow(dpy),0,0,200,100,0,whiteColor,whiteColor);
 
 	/* We want to get MapNotify events */
 	XSelectInput(dpy,win,StructureNotifyMask);
@@ -42,21 +42,30 @@ int main(void)
 	GC gc=XCreateGC(dpy,win,0,NULL);
 
 	/* Tell the GC we draw using the white color */
-	XSetForeground(dpy,gc,whiteColor);
+	XSetForeground(dpy,gc,blackColor);
 
-	/* Wait for the first MapNotify event */
 	do
-	    XNextEvent(dpy,&event);
-	while (event.type!=MapNotify);
+	{
+		/* Wait for an event */
+		XNextEvent(dpy,&event);
 
-	/* Draw the line */
-	XDrawLine(dpy,win,gc,10,60,180,20);
-
-	/* Send the "DrawLine" request to the server */
-	XFlush(dpy);
-
-	// Wait for 10 seconds
-	sleep(10);
+		switch (event.type)
+		{
+			case MapNotify:
+			case Expose:
+			case ButtonPress:
+			case ConfigureNotify:
+			case MotionNotify:	
+			case ButtonRelease:
+				/* Draw the line */
+				XDrawLine(dpy,win,gc,10,60,180,20);
+				/* Send the "DrawLine" request to the server */
+				XFlush(dpy);
+				break;	
+		}
+		sleep(1);
+	}
+	while (1);
 
 	return 0;
 }
