@@ -65,12 +65,14 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	float  H;
 	float  S;
 	float  Br;
-	int Hmax=50;
-	int Smax=20;
-	int Brmax=10;
 
+	char   des[3];
+	int    mod[3];
+	float  thres[3];
+	
 	int iteration_steps;
 	
+
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(x11_t)))) return NULL;
 
@@ -91,16 +93,16 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	context->gc=XCreateGC(context->dpy,context->win,0,NULL);
 	context->gcpx=XCreateGC(context->dpy,context->pxmap,0,NULL);
 
-
-
-
+	
+	/* Scan the argument string. */
+	sscanf(args,"%c%d,%f%c%d,%f%c%d,%f",
+		&des[0],&mod[0],&thres[0],
+		&des[1],&mod[1],&thres[1],
+		&des[2],&mod[2],&thres[2]);
 	
 	
 	/* Just for help now. */
-	iteration_steps=Hmax*Smax*Brmax;
-
-
-
+	iteration_steps=mod[0]*mod[1]*mod[2];
 
 	
 	
@@ -108,21 +110,41 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	for(i=0;i<iteration_steps;i++)
 	{
 		int x=i;
+		int d;
 		
-
+		for (d=0;d<3;d++)
+		{
+			if (thres[d]<0 || thres[d]>=1)
+			{
+				fprintf(stderr,"Illegal output format %s.\n",args);
+				exit(EXIT_FAILURE);
+			}
+			switch (des[d])
+			{
+				case 'h':
+				case 'H':
+					H=(float)(x%mod[d])/mod[d]+thres[d];
+					if (H>1) H=H-1;
+					x=x/mod[d];
+					break;
+				case 's':
+				case 'S':
+					S=(float)(x%mod[d])/mod[d]+thres[d];
+					if (S>1) S=S-1;
+					x=x/mod[d];
+					break;
+				case 'b':
+				case 'B':
+					Br=(float)(x%mod[d])/mod[d]+thres[d];
+					if (Br>1) Br=Br-1;
+					x=x/mod[d];
+					break;
+				default: 
+					fprintf(stderr,"Illegal output format %s.\n",args);
+					exit(EXIT_FAILURE);
+			}	
+		}
 		
-		S=(float)(x%Smax)/Smax;
-		x=x/Smax;
-		
-		Br=(float)(x%Brmax)/Brmax;
-		x=x/Brmax;
-		
-		H=(float)(x%Hmax)/Hmax;
-		x=x/Hmax;
-		
-		
-
-
 		context->colors[i].red=  R(H,S,Br)*COLOR_CEILING;
 		context->colors[i].green=G(H,S,Br)*COLOR_CEILING;
 		context->colors[i].blue= B(H,S,Br)*COLOR_CEILING;
