@@ -57,7 +57,9 @@ typedef void* (plugin_render_constructor_t)
 	 const void*              fractal_facility,
 	 const void*              output_facility,
 	 const void*              fractal,
-	 const void*              output);
+	 const void*              output,
+	 const char               args[]
+	 );
 typedef void (plugin_render_destructor_t)
 	 (void* handle);
 typedef void (plugin_render_function_t)
