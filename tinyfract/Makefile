@@ -1,9 +1,9 @@
 .PHONY: all clean
 
 CC=gcc-3.0
-CFLAGS=-Wall -O2 -DDEBUG -DVERSION_INFO=\"0.1\" -DBUILD_INFO=\"1\" -DBUILD_DATE="\"$(shell date)\"" -DBUILD_HOST="\"$(shell hostname -f)\""
+CFLAGS=-Wall -O2
 LD=gcc-3.0
-LDFLAGS=-ldl
+LDFLAGS=
 MAKE=make
 RM=/bin/rm
 
@@ -14,7 +14,12 @@ clean:
 	$(RM) -f *.o core tinyfract
 	$(MAKE) -C plugins clean
 
+main.o: main.c common.h plugin_loader.h
+	$(CC) $(CFLAGS) -c -o $@ -DDEBUG -DVERSION_INFO=\"0.1\" -DBUILD_INFO=\"1\" -DBUILD_DATE="\"$(shell date)\"" -DBUILD_HOST="\"$(shell hostname -f)\"" $<
 	
-tinyfract: main.o 
-	$(LD) $(LDFLAGS) -o $@ $^ 
+plugin_loader.o: plugin_loader.c plugin_loader.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+tinyfract: main.o plugin_loader.o 
+	$(LD) $(LDFLAGS) -ldl -o $@ $^ 
 
