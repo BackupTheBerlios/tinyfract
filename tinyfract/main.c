@@ -29,8 +29,7 @@
  * This function renders the picture. It connects the fractal function and the
  * output function.
  */
-void render(render_param_t render_param,
-	plugin_fractal_type_calculate_f_t *fractal_calculate_point, ordinal_number_t fractal_argc, real_number_t fractal_argv[])
+void render(render_param_t render_param, plugin_fractal_type_calculate_f_t *fractal_calculate_point, ordinal_number_t fractal_argc, real_number_t fractal_argv[])
 {
 	complex_number_t complex_position;
 	view_position_t  render_position;
@@ -103,8 +102,7 @@ int main(int argc, char* argv[])
 		{"output-method=",      1,0,'o'},
 		{"output-parameters=",  1,0,'O'},
 		{"plugin-path",         1,0,'P'},
-		
-					"(C)2004 Jan {"recursion-depth=",    1,0,'r'},
+		{"recursion-depth=",    1,0,'r'},
 		{"scale=",              1,0,'s'},
 		{"help",                0,0,'?'},
 		{"version",             0,0,'V'},
@@ -125,7 +123,6 @@ int main(int argc, char* argv[])
 			case 'c':
 				sscanf(optarg,"%lf,%lf",&render_param.center.real_part,&render_param.center.imaginary_part);
 				break;
-					"(C)2004 Jan 
 			case 'f':
 				fractal_type=optarg;
 				break;
@@ -220,14 +217,19 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"\toutput-method=%s\n",output_method);
 	fprintf(stderr,"\trecursion-depth=%d\n",render_param.recursion_depth);
 	fprintf(stderr,"\tscale=%lf\n",render_param.scale);
+	fflush(stdout);
+	fflush(stderr);
 #endif
 
-
-	/* Search for Symbol. */
-
 	
-	plugin_fractal_type_calculate_f=load_symbol(plugins, fractal_type);
-	
+	/* Load fractal function. */
+	if ((plugin_fractal_type_calculate_f=load_symbol("./plugins",fractal_type))==NULL)
+	{
+		fprintf(stderr,"%s: Could not load fractal function %s.\n",argv[0],fractal_type);
+		exit(EXIT_FAILURE);
+	}
+
+
 	
 	
 	/* Render the fractal. */
