@@ -14,8 +14,6 @@ typedef struct
 	XEvent    event;
 	Window    win;
  	Pixmap    pxmap;
-
-
 } x11_t;	
 
 /* Constructor and destructor for asciiart output. */
@@ -71,15 +69,14 @@ void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dim
 /* Flush asciiart viewport */
 void flush_viewport_x11(x11_t* handle)
 {
-	x11_render(handle->context_x11,&x11_defrenderparams,0,0,x11_imgwidth(handle->context_x11),x11_imgheight(handle->context_x11));
-	x11_flush(handle->context_x11);
+		/* Fill a rectangle */
+	XFillRectangle(handle->dpy,pxmap,gcpx,0,0,200,100);
+		/* Draw the line */
+	XDrawLine(handle->dpy,pxmap,gc,10,60,180,20);
+		/* Draw a Rectangle */
+	XDrawRectangle (handle->dpy,pxmap,gc,10,10,20,20);
 }
 
-/* Put pixel into asciiart viewport. */
-void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_value value)
-{
-	x11_putpixel(handle->context_x11,position.x,position.y,255-(value*10)&0xff);
-}
 
 
 /* Enumerate plugin facilities. */
