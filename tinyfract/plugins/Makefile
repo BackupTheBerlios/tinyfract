@@ -20,4 +20,4 @@ output_xlib.o: output_xlib.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 output_xlib.so: output_xlib.o
-	$(LD) $(LDFLAGS) -o $@ -L/usr/X11R6/lib -lXt -lXaw $^ 
+	$(LD) $(LDFLAGS) -o $@ -shared -L/usr/X11R6/lib -lXt -lXaw $^ 
