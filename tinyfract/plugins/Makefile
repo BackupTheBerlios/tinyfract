@@ -7,7 +7,7 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: aa.so lambda.so mandelbrot.so x11.so render_dumb.so render_recurse2.so
+all: aa.so lambda.so mandelbrot.so x11.so render_dumb.so render_recurse2.so render_recurse3.so
 clean:
 	$(RM) -f *.o *.so
 
@@ -40,3 +40,9 @@ render_recurse2.o: render_recurse2.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 render_recurse2.so: render_recurse2.o
 	$(LD) $(LDFALGS) -o $@ -shared $^
+
+render_recurse3.o: render_recurse3.c ../plugin.h ../common.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+render_recurse3.so: render_recurse3.o
+	$(LD) $(LDFALGS) -o $@ -shared $^
+

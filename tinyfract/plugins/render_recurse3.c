@@ -19,10 +19,6 @@ typedef struct
 	void*              fractal;
 	void*              output;
 	int                param;
-	int                param_help;
-	int                square_size;
-	int                x_count;
-	int                y_count;
 	ordinal_number_t*  points;
 } render_t;
 
@@ -53,7 +49,7 @@ static render_t* constructor(
 	}
 
 	#ifdef DEBUG
-	fprintf(stderr,"My parameter is: %s", args);
+	fprintf(stderr,"Render parameter is: %s\n",args);
 	#endif
 	
 	/* Get memory for the fractal context. */
@@ -81,17 +77,17 @@ static void destructor(render_t* handle)
 /* New calculate function. */
 ordinal_number_t cache_calculator(render_t* handle,const view_position_t render_position)
 {
-	/* Volatile datas */
-	ordinal_number_t*  help;
-	complex_number_t complex_position;
-	view_position_t    shift;
-	real_number_t      scaling_factor;
+	/* Volatile data. */
+	ordinal_number_t* help;
+	complex_number_t  complex_position;
+	view_position_t   shift;
+	real_number_t     scaling_factor;
 
-	/* Check if the point is also claculated. */
+	/* Check if the point has been calculated already. */
 	help=handle->points+render_position.y*handle->geometry.width+render_position.x;
 	if(*help==0)
 	{
-		/* No the has not been calculated till now, calculate the iteration. */
+		/* Has not been calculated till now, calculate the iteration. */
 
 		/* Precalculate scaling factor and center shift for speed reasons. */
 		scaling_factor=handle->scale/handle->geometry.width;
@@ -110,75 +106,75 @@ ordinal_number_t cache_calculator(render_t* handle,const view_position_t render_
 
 void fill_square(render_t* handle,const view_position_t start_point,const int square_size)
 {
-	/* Volatile datas */
-	ordinal_number_t ol;
-	ordinal_number_t or;
+	/* Volatile data. */
 	ordinal_number_t ul;
 	ordinal_number_t ur;
+	ordinal_number_t ll;
+	ordinal_number_t lr;
 	view_position_t  help;
 	view_dimension_t square_help;
-	int              new_square_size;
 
-	/* Calculate iterations for the first corner. */
-	help.x=start_point.x;
+	/* Calculate iterations for the upper left corner. */
+	ul=cache_calculator(handle,start_point);
+
+	/* Calculate iterations for the upper right corner. */
+	help.x=start_point.x+square_size-1;
 	help.y=start_point.y;
-	ol=cache_calculator(handle,help);
-
-	/* Calculate iterations for the second corner. */
-	help.x=start_point.x+square_size;
-	help.y=start_point.y;
-	or=cache_calculator(handle,help);
-
-	/* Calculate iterations for the third corner. */
-	help.x=start_point.x+square_size;
-	help.y=start_point.y+square_size;
 	ur=cache_calculator(handle,help);
 
 	/* Calculate iterations for the fourth corner. */
-	help.x=start_point.x;
-	help.y=start_point.y+square_size;
-	ul=cache_calculator(handle,help);
+	help.y=start_point.y+square_size-1;
+	lr=cache_calculator(handle,help);
 	
-	/* Check if the corners have the same iterations. */
-	if(ol==or && ol==ul && ol==ur)
+	/* Calculate iterations for the lower right corner. */
+	help.x=start_point.x;
+	ll=cache_calculator(handle,help);
+
+	/* Check if we're at square size two. */
+	if (square_size==2)
 	{
-		/* Yes, print the hole square. */
-		square_help.width=square_size;
-		square_help.height=square_size;
-		(*handle->output_facility->facility.output.fill_rect_function)(handle->output,start_point,square_help,ol);
+		/* Yes. Calculate and draw the four pixels. */
+		(*handle->output_facility->facility.output.put_pixel_function)(handle->output,start_point,ul);
+		help.x=start_point.x+1;
+		help.y=start_point.y;
+		(*handle->output_facility->facility.output.put_pixel_function)(handle->output,help,ur);
+		help.y++;
+		(*handle->output_facility->facility.output.put_pixel_function)(handle->output,help,lr);
+		help.x--;
+		(*handle->output_facility->facility.output.put_pixel_function)(handle->output,help,ll);
+		
+		/* End of recursion. */
 	}
 	else
-	{
-		/* No, split the square into four new squares. */
-
-		/* Calculate the new square size. */ 
-		if(square_size==1)
-			new_square_size=0;
+		/* Check if the corners have the same iterations. */
+		if(ul==ur && ul==ll && ll==lr)
+		{
+			/* Yes, print the whole square in the same color. */
+			square_help.width=square_size;
+			square_help.height=square_size;
+			(*handle->output_facility->facility.output.fill_rect_function)(handle->output,start_point,square_help,ul);
+		}
 		else
 		{
-			handle->param_help--;
-			new_square_size=handle->param_help*2-1;
-		}
-		
-		/* Execute the fill square function for each new square. */
-		fill_square(handle,start_point,new_square_size);
-		handle->param_help=(new_square_size+1)/2;
+			/* No, split the square into four new squares. */
+			/* Upper left. */
+			fill_square(handle,start_point,square_size/2);
 
-		help.x=start_point.x+new_square_size;
-		help.y=start_point.y;
-		fill_square(handle,help,new_square_size);
-		handle->param_help=(new_square_size+1)/2;
+			/* Upper right. */
+			help.x=start_point.x+square_size/2;
+			help.y=start_point.y;
+			fill_square(handle,help,square_size/2);
 
-		help.x=start_point.x;
-		help.y=start_point.y+new_square_size;
-		fill_square(handle,help,new_square_size);
-		handle->param_help=(new_square_size+1)/2;
+			/* Lower right. */
+			help.y=start_point.y+square_size/2;
+			fill_square(handle,help,square_size/2);
+			
+			/* Lower left. */
+			help.x=start_point.x;
+			fill_square(handle,help,square_size/2);
 
-		help.x=start_point.x+new_square_size;
-		help.y=start_point.y+new_square_size;
-		fill_square(handle,help,new_square_size);
-		handle->param_help=(new_square_size+1)/2;
-	}
+			/* End of recursion when all fill_square functions came back. */
+		}		
 }
 
 
@@ -200,24 +196,12 @@ void render_recurse(render_t* handle)
 	handle->points=malloc((sizeof(ordinal_number_t))*handle->geometry.width*handle->geometry.height);
 	
 	/* Calculate square_size. */
-	square_size=2*handle->param-1;
+	square_size=1<<handle->param;
 
 	/* Calculate number of squares. */
 	x_square=handle->geometry.width/square_size;
 	y_square=handle->geometry.height/square_size;
 	
-	/* Calulate iterations of each square corner. */
-	for(render_position.x=0;render_position.x<x_square*square_size;render_position.x+=square_size)
-	{
-		for(render_position.y=0;render_position.y<y_square*square_size;render_position.y+=square_size)
-		{
-			help=handle->points
-				+render_position.y*handle->geometry.width
-				+render_position.x;
-			*help=cache_calculator(handle,render_position);
-		}
-	}
-
 	/* Execute the fill square function for each square. */
 	for(x_count=0;x_count<x_square-1;x_count++)
 	{
@@ -226,9 +210,6 @@ void render_recurse(render_t* handle)
 			/* Calculate the first corner of the square. */
 			start_point.x=x_count*square_size;
 			start_point.y=y_count*square_size;
-
-			/* Set the correct param into param_help. */
-			handle->param_help=handle->param;
 
 			/* Execute the fill square function. */
 			fill_square(handle,start_point,square_size);

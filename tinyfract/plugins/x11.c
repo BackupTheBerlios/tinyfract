@@ -179,6 +179,9 @@ void blit_rect_x11(x11_t* handle, const view_position_t position, const view_dim
 /* Fill rectangle in X11 viewport with color. */
 void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
 {
+	/* Set color for next operation. */
+	XSetForeground(handle->dpy,handle->gcpx,handle->colors[value].pixel);
+	
 	/* Fill a rectangle. */
 	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y,dimension.width,dimension.height);
 }
