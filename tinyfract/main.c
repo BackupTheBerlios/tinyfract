@@ -209,16 +209,19 @@ int main(int argc, char* argv[])
 					"  -f, --fractal-type=       Select the fractal formula. A plugin has to provide the\n"
 					"                              formula. Default is prompting the user.\n"
 					"  -F, --fractal-parameters= Specifies additional fractal parameters, if the\n"
-					"                              fractal formula needs any. All are zero by default.\n"
+					"                              fractal formula needs any.\n"
 					"  -g, --geometry=           Output picture size in pixels. Format: Width x Height.\n"
 					"                              Defaults to output plugin's choice.\n"
 					"  -i, --iteration-steps=    Sets the maximum count of iterations per point.\n"
 					"                              Defaults to fractal function's choice.\n"
-					"  -o, --output-method=      Specifies the output method. A plugin has to provide it. If no output method is given a default value which is defined in export TINYFRACT_OUTPUT_METHOD will be used. \n"
-					"                              Default is prompting the user.\n"
+					"  -o, --output-method=      Specifies the output method. A plugin has to provide it.\n"
+					"                              If no output method is given a default value from the\n"
+					"                              environment variable TINYFRACT_OUTPUT_METHOD will be used.\n"
 					"  -O, --output-parameters=  Specifies additional parameters passed to the output\n"
 					"                              function.\n"
-					"  -P, --plugin-path=        Specifies a path to search for plugins. If no plugin path is given a deault value which is defined in export TINYFRACT_PLUGIN_PATH will be used\n"
+					"  -P, --plugin-path=        Specifies a path to search for plugins. If no plugin path\n"
+					"                              is given a default value from the environment variable\n"
+					"                              TINYFRACT_PLUGIN_PATH will be used.\n"
 					"  -r, --render-method=      Specifies the render method. A plugin has to provide it.\n"
 					"  -R, --render-parameters=  Specifies additional parameters passed to the render\n"
 					"                              function.\n"
@@ -246,8 +249,7 @@ int main(int argc, char* argv[])
 	/* Test if plugin path was given. */
 	if (!plugin_path)
 	{
-		plugin_path=getenv("TINYFRACT_PLUGIN_PATH");
-		if(plugin_path==0)
+		if (!(plugin_path=getenv("TINYFRACT_PLUGIN_PATH")))
 		{
 			fprintf(stderr,"%s: You have to specify a plugin path.\n",argv[0]);
 			exit(EXIT_FAILURE);
@@ -257,8 +259,7 @@ int main(int argc, char* argv[])
 	/* Test if output method was given */
 	if (!output_method)
 	{
-		output_method=getenv("TINYFRACT_OUTPUT_METHOD");
-		if (!output_method)
+		if (!(output_method=getenv("TINYFRACT_OUTPUT_METHOD")))
 		{
 			fprintf(stderr,"%s: You have to specify a output method.\n",argv[0]);
 			exit(EXIT_FAILURE);
