@@ -136,15 +136,8 @@ void blit_rect_x11(x11_t* handle, const view_position_t position, const view_dim
 /* Fill rectangle in X11 viewport with color. */
 void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
 {
-#if 0
-	/* Fill a rectangle */
-	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,0,0,200,100);
-		/* Draw the line */
-	XDrawLine(handle->dpy,handle->pxmap,handle->gc,10,60,180,20);
-		/* Draw a Rectangle */
-	XDrawRectangle(handle->dpy,handle->pxmap,handle->gc,10,10,20,20);
-#endif
-
+	/* Fill a rectangle. */
+	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y,dimension.weight,dimension.height);
 }
 
 /* Put pixel into X11 viewport. */
