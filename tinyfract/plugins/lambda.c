@@ -1,10 +1,40 @@
+#include <stdlib.h>
 #include "../common.h"
 #include "../plugin.h"
+#include "../param_parser.h"
 
 
-/* Lambda fractal function */
+/* Data structure for Lambda arguments and other volatile data. */
+typedef struct
+{
+	ordinal_number_t iteration_steps;
+	complex_number_t lambda;
+} lambda_t;
+
+/* Constructor and destructor for Lambda fractal. */
+static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, const char args[])
+{
+	lambda_t* context;
+	
+	/* Get memory for the fractal context. */
+	if (!(context=malloc(sizeof(lambda_t)))) return NULL;
+
+	/* Set the fractal context. */
+	context->iteration_steps=iteration_steps;
+	Re(context->lambda)=1;
+	Im(context->lambda)=1;
+
+	/* Return the handle. */
+	return context;
+}
+
+static void destructor_lambda(lambda_t* handle)
+{
+	free(handle);
+}
+
 /* Lambda formula: z(0)=p, lambda=const., z(n+1) = lambda*z(n)*(1 - z(n)). */
-static ordinal_number_t calculate_lambda(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[])
+static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_t position)
 {
 	/* Lambda fractal constants. */
 	const real_number_t bailout_square=4;
@@ -25,26 +55,13 @@ static ordinal_number_t calculate_lambda(const complex_number_t position, const 
 	real_number_t    ReZ_ImZ;
 
 	/* Lambda parameter. */
-	complex_number_t lambda;
-
-	/* Determine if lambda parameter is given. */
-	if (argc>1) 
-	{
-		/* Yes. */
-		Re(lambda)=argv[0];
-		Im(lambda)=argv[1];
-	} else
-	{
-		/* No, initialize lambda parameter to (1,0). */
-		Re(lambda)=1;
-		Im(lambda)=0;
-	}	
+	complex_number_t lambda=handle->lambda;
 
 	/* The calculation begins with the a point on the complex plane. */
 	VARCOPY(Z,position);
 
 	/* Now do the iteration. */
-	for (step=0;step<iteration_steps;step++)
+	for (step=0;step<handle->iteration_steps;step++)
 	{
 		/* Calculate Z_square first, as we can use a faster formula then. */
 		Re(Z_square)=Re(Z)*Re(Z);
@@ -71,16 +88,25 @@ static ordinal_number_t calculate_lambda(const complex_number_t position, const 
 	return step; /* Return the iteration step in which we reached the bailout radius. */
 }
 
+
 /* Enumerate plugin facilities. */
 volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 {
 	{
-		"lambda",
-		plugin_facility_fractal,
-		{{
-			iteration_steps: 170,
-			calculate_function: (const plugin_fractal_calculate_function_t*) &calculate_lambda,
-		}}
+		name: "lambda",
+		type: plugin_facility_fractal,
+		facility:
+		{
+			fractal:
+			{
+				constructor:        (const plugin_fractal_constructor_t*) &constructor_lambda,
+				destructor:         (const plugin_fractal_destructor_t*) &destructor_lambda,
+				calculate_function: (const plugin_fractal_calculate_function_t*) &calculate_lambda,
+				center: {0,0},
+				iteration_steps: 200,
+				scale: 4
+			}
+		}
 	},
 	{ plugin_facility_end }
 };

@@ -31,7 +31,7 @@ void *load_plugin_facility(const char* path, const plugin_facility_enum_t facili
 	}
 	
 	/* Arrange the search path. */
-	if ((path_scratch=malloc(strlen(path)+1))==NULL)
+	if ((path_scratch=malloc(strlen(path)+sizeof(char)))==NULL)
 	{
 		perror("plugin_loader, malloc");
 		exit(EXIT_FAILURE);
@@ -75,7 +75,7 @@ void *load_plugin_facility(const char* path, const plugin_facility_enum_t facili
 			while ((directory_entry=readdir(directory_handle))!=NULL)
 			{
 				/* Arrange the file name for dlopen(). */
-				if ((file_name=malloc(strlen(directory_name)+strlen(directory_entry->d_name)+2))==NULL)
+				if ((file_name=malloc(strlen(directory_name)+strlen(directory_entry->d_name)+sizeof(char)*2))==NULL)
 				{
 					perror("plugin_loader, malloc");
 					exit(EXIT_FAILURE);
@@ -106,7 +106,11 @@ void *load_plugin_facility(const char* path, const plugin_facility_enum_t facili
 						while (facility->type!=plugin_facility_end)
 						{
 							#ifdef DEBUG
-							fprintf(stderr,"plugin_loader: facility %s found.\n",facility->name);
+							fprintf(stderr,"plugin_loader: %s facility %s found.\n",
+							(facility->type==plugin_facility_fractal?"fractal":(
+							 facility->type==plugin_facility_output?"output":(
+							 facility->type==plugin_facility_output?"render":"unknown"))),
+								facility->name);
 							#endif
 
 							/* Check if type and name match the request. */
@@ -115,9 +119,14 @@ void *load_plugin_facility(const char* path, const plugin_facility_enum_t facili
 							{
 								#ifdef DEBUG
 								fprintf(stderr,"plugin_loader: type and name match the request!\n");
+								fprintf(stderr,"plugin_loader: found matching facility %s at address %p.\n",facility_name,facility);
 								#endif
-								
-								goto end;
+
+								/* Free the space for the arranged path. */
+								free(path_scratch);
+							
+								/* Return with success. */
+								return facility;
 							}	
 								
 							/* Check next facility. */
@@ -136,14 +145,9 @@ void *load_plugin_facility(const char* path, const plugin_facility_enum_t facili
 	}
 	while ((directory_name=strtok(NULL,":"))!=NULL);
 
-end: /* Target for successful search. */
-
 	/* Free the space for the arranged path. */
 	free(path_scratch);
 
-	#ifdef DEBUG
-	fprintf(stderr,"plugin_loader: found matching facility %s at address %p.\n",facility_name,facility);
-	#endif
-
-	return facility;
+	/* Return with failure. */
+	return NULL;
 }

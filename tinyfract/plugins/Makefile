@@ -7,10 +7,15 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: lambda.so mandelbrot.so
+all: aa.so lambda.so mandelbrot.so
 #output_xlib.so 
 clean:
 	$(RM) -f *.o *.so
+
+aa.o: aa.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+aa.so: aa.o
+	$(LD) $(LDFLAGS) -o $@ -shared -laa $^ 
 
 lambda.o: lambda.c
 	$(CC) $(CFLAGS) -c -o $@ $<

@@ -7,37 +7,80 @@
 #define FACILITY_NAME_MAX_SIZE 32
 
 
-/* Function types for the fractal function plugin.*/
-typedef ordinal_number_t (plugin_fractal_calculate_function_t)(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[]);
+
+/* Function types for the fractal facility.*/
+typedef void* (plugin_fractal_constructor_t)
+	(const ordinal_number_t iteration_steps,
+	 const char args[]);
+
+typedef void (plugin_fractal_destructor_t)
+	(void* handle);
+
+typedef ordinal_number_t (plugin_fractal_calculate_function_t)
+	(void* handle,
+	 const complex_number_t position);
 
 
-/* Function types for the output function plugin. */
-typedef int (output_initialize_view_port_t)(const view_dimension_t dimension, const char *output_args);
-typedef int (output_draw_rect_t)(const view_position_t lower_left_corner, const view_position_t upper_right_corner, const pixel_properties value);
+/* Function types for the output facility. */
+typedef void* (plugin_output_constructor_t)
+	(const view_dimension_t dimension);
+
+typedef void (plugin_output_destructor_t)
+	 (void* handle);
+
+typedef void (plugin_output_blit_rect_function_t)
+	(void* handle,
+	 const view_position_t position,
+	 const view_dimension_t dimension,
+	 const pixel_value values[]);
+
+typedef void (plugin_output_fill_rect_function_t)
+	(void* handle,
+	 const view_position_t position,
+	 const view_dimension_t dimension,
+	 const pixel_value value);
+
+typedef void (plugin_output_flush_viewport_function_t)
+	(void* handle);
+
+typedef void (plugin_output_put_pixel_function_t)
+	(void* handle,
+	 const view_position_t position,
+	 const pixel_value value);
 
 
-
+/* Plugin facility types. */
 typedef struct
 {
-	const ordinal_number_t                     iteration_steps;
-	const plugin_fractal_calculate_function_t* calculate_function;
+	plugin_fractal_constructor_t*        constructor;
+	plugin_fractal_destructor_t*         destructor;
+	plugin_fractal_calculate_function_t* calculate_function;
+	complex_number_t                     center;
+	ordinal_number_t                     iteration_steps;
+	real_number_t                        scale;
 } plugin_facility_fractal_t;
 
 typedef struct
 {
-	const void* output_function;
+	plugin_output_constructor_t*             constructor;
+	plugin_output_destructor_t*              destructor;
+	plugin_output_blit_rect_function_t*      blit_rect_function;
+	plugin_output_fill_rect_function_t*      fill_rect_function;
+	plugin_output_flush_viewport_function_t* flush_viewport_function;
+	plugin_output_put_pixel_function_t*      put_pixel_function;
 } plugin_facility_output_t;
 
 typedef struct
 {
-	const void* render_function; 
+	void* render_function; 
 } plugin_facility_render_t;
+
 
 typedef union
 {
-	const plugin_facility_fractal_t fractal;
-	const plugin_facility_output_t  output;
-	const plugin_facility_render_t  render;
+	plugin_facility_fractal_t fractal;
+	plugin_facility_output_t  output;
+	plugin_facility_render_t  render;
 } plugin_facility_union_t;
 
 typedef enum
@@ -50,9 +93,9 @@ typedef enum
 
 typedef struct
 {
-	const char                    name[FACILITY_NAME_MAX_SIZE];
-	const plugin_facility_enum_t  type;
-	const plugin_facility_union_t facility;
+	char                    name[FACILITY_NAME_MAX_SIZE];
+	plugin_facility_enum_t  type;
+	plugin_facility_union_t facility;
 } plugin_facility_t;
 
 #endif
