@@ -8,12 +8,12 @@ RM=/bin/rm
 
 
 all: aa.so lambda.so mandelbrot.so
-#output_xlib.so 
+#output_xlib.so
 clean:
 	$(RM) -f *.o *.so
 
 aa.o: aa.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -I.. -c -o $@ $<
 aa.so: aa.o
 	$(LD) $(LDFLAGS) -o $@ -shared -laa $^ 
 
