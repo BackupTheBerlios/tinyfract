@@ -334,7 +334,7 @@ int main(int argc, char* argv[])
 		(flags & CENTER_SET?center:fractal_facility->facility.fractal.center,
 		 geometry,
 		 flags & SCALE_SET?scale:fractal_facility->facility.fractal.scale,
-		 fractal_facility,fractal,output_facility,output)))
+		 fractal_facility,output_facility,fractal,output)))
 	{
 		perror("could not initialize render facility");
 		exit(EXIT_FAILURE);
