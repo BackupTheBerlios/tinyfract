@@ -1,19 +1,11 @@
 #include "../common.h"
-#include "stdio.h"
+#include "../plugin.h"
 
-
-
-/* Exported constants for the mandelbrot function */
-
-#if 0
-const plugin_fractal_constants_t plugin_fractal_constants_mandelbrot=
-{
-	iteration_steps: 170;
-}
-#endif
 
 /* Mandelbrot fractal function */
-ordinal_number_t plugin_fractal_calculate_mandelbrot(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[])
+/* Mandelbrot formula: z(0)=p,           z(n+1)=z(n)^2+p */
+/* Julia formula:      z(0)=p, c=const., z(n+1)=z(n)^2+c */
+static ordinal_number_t calculate_mandelbrot(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[])
 {
 	/* Mandelbrot fractal constants. */
 	const real_number_t bailout_square=4;
@@ -40,7 +32,6 @@ ordinal_number_t plugin_fractal_calculate_mandelbrot(const complex_number_t posi
 	 */
 	complex_number_t C;
 
-	
 	/* Determine if Julia mode is requested. */
 	if (argc>1) 
 	{
@@ -60,17 +51,40 @@ ordinal_number_t plugin_fractal_calculate_mandelbrot(const complex_number_t posi
 		Re(Z_square)=Re(Z)*Re(Z);
 		Im(Z_square)=Im(Z)*Im(Z);
 	
-		/* Calculate the radius from complex pane origin to Z */
+		/* Calculate the radius from complex pane origin to Z. */
 		radius_square=Re(Z_square)+Im(Z_square);
 
- 		/* Break the iteration if the mandelbrot bailout orbit is left */
+ 		/* Break the iteration if the mandelbrot bailout orbit is left. */
 		if (radius_square>bailout_square) break;
 
-		/* The fast way to calculate Z:=Z^2+C */
+		/* The fast way to calculate Z:=Z^2+C. */
 		Z_helper=Re(Z_square)-Im(Z_square)+Re(C);
 		Im(Z)=2*Re(Z)*Im(Z)+Im(C);
 		Re(Z)=Z_helper;
 	}
 
-	return step; /* Return the iteration step which reached the bailout radius */
+	return step; /* Return the iteration step in which we reached the bailout radius. */
 }
+
+/* Enumerate plugin facilities. */
+volatile const plugin_facility_t tinyfract_plugin_facilities[]=
+{
+	{
+		"mandelbrot",
+		plugin_facility_fractal,
+		{{
+			iteration_steps: 170,
+			calculate_function: (const plugin_fractal_calculate_function_t*) &calculate_mandelbrot,
+		}}
+	},
+	{
+		"julia",
+		plugin_facility_fractal,
+		{{
+			iteration_steps: 170,
+			calculate_function: (const plugin_fractal_calculate_function_t*) &calculate_mandelbrot,
+		}}
+	},
+	{ plugin_facility_end }
+};
+

@@ -13,17 +13,11 @@
 #include <unistd.h>
 
 #include "common.h"
+#include "plugin.h"
 #include "plugin_loader.h"
 
 
-
 /* Global variables */
-
-
-
-
-
-
 
 
 /*
@@ -74,29 +68,23 @@ void render(render_param_t render_param, plugin_fractal_calculate_function_t *fr
  */
 int main(int argc, char* argv[])
 {
-	render_param_t    render_param;        /* Rendering parameters from command line or user input */
-	char             *fractal_type=NULL;   /* Fractal type selected from command line or user input */
-	char             *fractal_argv_string; /* Fractal parameters from command line or user input */
-	char             *fractal_argv_helper; /* Helper variable for tokenizing fractal_argv_string */
-	ordinal_number_t  fractal_argc=0;      /* Number of fractal parameters */ 
-	real_number_t    *fractal_argv=NULL;   /* Array of fractal parameters */
-	
-	plugin_fractal_calculate_function_t *plugin_fractal_calculate_function=NULL; /* Pointer to fractal calculation function */
-	char             *output_method=NULL;  /* Output method selected from command line or user input */
-	char             *output_args=NULL;    /* Output parameters from command line or user input */
-
-#ifdef DEBUG
+	#ifdef DEBUG
 	int debug_i;
-#endif
+	#endif
 
-	char            *plugin_fractal_calculate_function_name;
+	ordinal_number_t   fractal_argc=0;      /* Number of fractal parameters */ 
+	char*              fractal_argv_string; /* Fractal parameters from command line or user input */
+	char*              fractal_argv_helper; /* Helper variable for tokenizing fractal_argv_string */
+	real_number_t*     fractal_argv=NULL;   /* Array of fractal parameters */
+	plugin_facility_t* fractal_facility;    /* Structure of fractal plugin facilities */
+	char*              fractal_type=NULL;   /* Fractal type selected from command line or user input */
+	render_param_t     render_param;        /* Rendering parameters from command line or user input */
+	
+	char* output_method=NULL;  /* Output method selected from command line or user input */
+	char* output_args=NULL;    /* Output parameters from command line or user input */
+	
 
 	
-	const char plugin_name[]   ="plugin_";
-	const char fractal_name[]  ="fractal_";
-	const char calculate_name[]="calculate_";
-	
-
 	/* Parse options. */
 	int c;
 	int option_index=0;
@@ -236,38 +224,19 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-	/* Load fractal function. */
-	if ((plugin_fractal_calculate_function_name=
-		malloc(strlen(plugin_name)+strlen(fractal_name)+strlen(calculate_name)
-			+strlen(fractal_type)+1))==NULL)
+	/* Load fractal facility. */
+	if ((fractal_facility=load_plugin_facility("./plugins",plugin_facility_fractal,fractal_type))==NULL)
 	{
-		perror("fractal_function, malloc");
-		exit(EXIT_FAILURE);
-	}
-	
-	strcpy(plugin_fractal_calculate_function_name,plugin_name);
-	strcat(plugin_fractal_calculate_function_name,fractal_name);
-	strcat(plugin_fractal_calculate_function_name,calculate_name);
-	strcat(plugin_fractal_calculate_function_name,fractal_type);
-
-
-	#ifdef DEBUG
-	fprintf(stderr,"Considering %s\n",plugin_fractal_calculate_function_name);
-	#endif
-	
-	if ((plugin_fractal_calculate_function=load_symbol("./plugins",plugin_fractal_calculate_function_name))==NULL)
-	{
-		fprintf(stderr,"%s: Could not load fractal function %s.\n",argv[0],fractal_type);
+		fprintf(stderr,"%s: Could not load fractal facility %s.\n",argv[0],fractal_type);
 		exit(EXIT_FAILURE);
 	}
 
-
 	#ifdef DEBUG
-	fprintf(stderr,"Render function %p\n",plugin_fractal_calculate_function);
+	fprintf(stderr,"Render function %p\n",fractal_facility->facility.fractal.calculate_function);
 	#endif
 	
 	/* Render the fractal. */
-	render(render_param,plugin_fractal_calculate_function,fractal_argc,fractal_argv); 
+	render(render_param,fractal_facility->facility.fractal.calculate_function,fractal_argc,fractal_argv); 
 
 	/* That was it. Bye! */
 	exit(EXIT_SUCCESS);
