@@ -123,6 +123,7 @@ int main(int argc, char* argv[])
 	const int GEOMETRY_SET=2;
 	const int ITERATION_STEPS_SET=4;
 	const int SCALE_SET=8;
+
 	
 	int c;
 	int option_index=0;
@@ -213,11 +214,11 @@ int main(int argc, char* argv[])
 					"                              Defaults to output plugin's choice.\n"
 					"  -i, --iteration-steps=    Sets the maximum count of iterations per point.\n"
 					"                              Defaults to fractal function's choice.\n"
-					"  -o, --output-method=      Specifies the output method. A plugin has to provide it.\n"
+					"  -o, --output-method=      Specifies the output method. A plugin has to provide it. If no output method is given a default value which is defined in export TINYFRACT_OUTPUT_METHOD will be used. \n"
 					"                              Default is prompting the user.\n"
 					"  -O, --output-parameters=  Specifies additional parameters passed to the output\n"
 					"                              function.\n"
-					"  -P, --plugin-path=        Specifies a path to search for plugins.\n"
+					"  -P, --plugin-path=        Specifies a path to search for plugins. If no plugin path is given a deault value which is defined in export TINYFRACT_PLUGIN_PATH will be used\n"
 					"  -r, --render-method=      Specifies the render method. A plugin has to provide it.\n"
 					"  -R, --render-parameters=  Specifies additional parameters passed to the render\n"
 					"                              function.\n"
@@ -245,8 +246,23 @@ int main(int argc, char* argv[])
 	/* Test if plugin path was given. */
 	if (!plugin_path)
 	{
-		fprintf(stderr,"%s: You have to specify a plugin path.\n",argv[0]);
-		exit(EXIT_FAILURE);
+		plugin_path=getenv("TINYFRACT_PLUGIN_PATH");
+		if(plugin_path==0)
+		{
+			fprintf(stderr,"%s: You have to specify a plugin path.\n",argv[0]);
+			exit(EXIT_FAILURE);
+		}
+	}
+	
+	/* Test if output method was given */
+	if (!output_method)
+	{
+		output_method=getenv("TINYFRACT_OUTPUT_METHOD");
+		if (!output_method)
+		{
+			fprintf(stderr,"%s: You have to specify a output method.\n",argv[0]);
+			exit(EXIT_FAILURE);
+		}
 	}
 	
 	/* Test if fractal type was given. */
