@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "../common.h"
 #include "../plugin.h"
@@ -21,8 +22,11 @@ static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, cons
 
 	/* Set the fractal context. */
 	context->iteration_steps=iteration_steps;
-	Re(context->lambda)=1;
-	Im(context->lambda)=1;
+	sscanf(args,"%lf,%lf",&Re(context->lambda),&Im(context->lambda));
+
+ 	#ifdef DEBUG 
+	fprintf(stderr,"Lambda parameter: %s,%lf,%lf\n",args,Re(context->lambda),Im(context->lambda));
+	#endif
 
 	/* Return the handle. */
 	return context;

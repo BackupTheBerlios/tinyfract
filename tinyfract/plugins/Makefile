@@ -1,7 +1,7 @@
 .PHONY: all clean
 
 CC=gcc-3.0
-CFLAGS=-O3 -fPIC
+CFLAGS=-O3 -fPIC -DDEBUG
 LD=gcc-3.0
 LDFLAGS=
 RM=/bin/rm

@@ -22,9 +22,12 @@ static julia_t* constructor_julia(const ordinal_number_t iteration_steps, const 
 
 	/* Set the fractal context. */
 	context->iteration_steps=iteration_steps;
-	Re(context->C)=0;
-	Im(context->C)=1;
+	sscanf(args,"%lf,%lf",&Re(context->C),&Im(context->C));
 
+ 	#ifdef DEBUG 
+	fprintf(stderr,"Julia parameter: %s,%lf,%lf\n",args,Re(context->C),Im(context->C));
+	#endif
+	
 	/* Return the handle. */
 	return context;
 }
