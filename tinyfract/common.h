@@ -61,13 +61,5 @@ typedef struct
 
 
 
-/* Function types for the fractal function plugin.*/
-typedef ordinal_number_t (plugin_fractal_calculate_function_t)(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[]);
-
-
-/* Function types for the output function plugin. */
-typedef int (output_initialize_view_port_t)(const view_dimension_t dimension, const char *output_args);
-typedef int (output_draw_rect_t)(const view_position_t lower_left_corner, const view_position_t upper_right_corner, const pixel_properties value);
-
 
 #endif
