@@ -319,6 +319,7 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
+
 	/* Load render facility. */
 	if (!(render_facility=load_plugin_facility(plugin_path,plugin_facility_render,render_method)))
 	{
@@ -345,8 +346,9 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"Rendering the fractal.\n");
 	#endif
 	(*render_facility->facility.render.render_function)(render);
-
-
+	
+	fprintf(stderr,"TEST\n");
+	
 	/* Flush and close the output viewport. */
 	#ifdef DEBUG
 	fprintf(stderr,"Flushing viewport.\n");
