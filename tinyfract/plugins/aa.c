@@ -12,7 +12,7 @@ typedef struct
 } aa_t;	
 
 /* Constructor and destructor for asciiart output. */
-static aa_t* constructor_aa(const view_dimension_t dimension)
+static aa_t* constructor_aa(const view_dimension_t dimension, const char args[])
 {
 	aa_t* context;
 	struct aa_hardware_params hardware_params;
