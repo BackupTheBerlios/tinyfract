@@ -24,27 +24,49 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(x11_t)))) return NULL;
 
-	/* Parse options for aalib given in AAOPTS environment variable. */
-	if (!x11_parseoptions(NULL,NULL,NULL,NULL))
-        {
-		#ifdef DEBUG
-		fprintf(stderr,"aa: error parsing options, %s\n",x11_help);
-		#endif
-		return NULL;
-	}
-
 	/* Initialize the viewport. */
-	if ((context->context_x11=x11_autoinit(&x11_defparams))==NULL)
-        {
-		#ifdef DEBUG
-		fprintf(stderr,"aa: error initializing viewport, %s\n",x11_help);
-		#endif
-		return NULL;
-	}
 
-	/* Hide the cursor if necessary/possible. */
-	x11_hidecursor(context->context_x11);
 
+	/* Open the display */
+	dpy=XOpenDisplay(NULL);
+	
+	/* Get some colors */
+
+	XColor mycolor;	
+	mycolor.red=65535;
+	mycolor.green=0;
+	mycolor.blue=0;
+	mycolor.flags=DoRed|DoGreen|DoBlue;
+
+	XAllocColor(dpy,DefaultColormap(context->dpy,DefaultScreen(dpy)),&mycolor);
+	blackColor=mycolor.pixel;
+		
+	//blackColor=BlackPixel(dpy,DefaultScreen(dpy));
+	whiteColor=WhitePixel(context->dpy,DefaultScreen(dpy));
+
+	/* Create the window */
+	win=XCreateSimpleWindow(context->dpy,DefaultRootWindow(dpy),0,0,200,100,0,whiteColor,whiteColor);
+	/* Pixmap */
+	pxmap=XCreatePixmap(context->dpy,DefaultRootWindow(dpy),200,100,16);
+
+	
+	/* We want to get MapNotify events */
+	XSelectInput(context->dpy,win,StructureNotifyMask);
+
+	/* "Map" the window (that is, make it appear on the screen) */
+	XMapWindow(context->dpy,win);
+
+	/* Create a "Graphics Context" */
+	gc=XCreateGC(context->dpy,win,0,NULL);
+	
+	gcpxval.function=GXset;
+	gcpx=XCreateGC(context->dpy,pxmap,GCFunction,&gcpxval);
+	
+
+	/* Tell the GC we draw using the white color */
+	XSetForeground(context->dpy,gc,blackColor);
+	
+	
 	/* Return the handle. */
 	return context;
 }
