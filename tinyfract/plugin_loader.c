@@ -103,7 +103,7 @@ end:
 	free(plugin_path_scratch);
 
 	#ifdef DEBUG
-	fprintf(stderr,"Found symbol: %p\n",fp);
+	fprintf(stderr,"Found symbol: %p, %s\n",fp,dlerror());
 	#endif
 	return fp;
 }

@@ -16,6 +16,7 @@
 #include "plugin_loader.h"
 
 
+
 /* Global variables */
 
 
@@ -52,9 +53,8 @@ void render(render_param_t render_param, plugin_fractal_calculate_function_t *fr
 			Im(complex_position)=Im(render_param.center)+scaling_factor*(render_position.y-shift.y);
 //			fprintf(stderr,"%lf %lf %lf\n",Re(complex_position),Im(complex_position),(*fractal_calculate_point)(complex_position,render_param.iteration_steps,fractal_argc,fractal_argv));
 			fprintf(stderr,"%c",' '+(char)(
-			
-			(*fractal_calculate_point)(complex_position,render_param.iteration_steps,fractal_argc,fractal_argv))
-			);
+			/* Call fractal point calculation function */
+				(*fractal_calculate_point)(complex_position,render_param.iteration_steps,fractal_argc,fractal_argv)));
 		}
 		fprintf(stderr,"\n");
 	}
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
 					"                         coordinate system. Defaults to fractal function's choice.\n"
 					"      --help           Show this help and exit.\n"
 					"      --version        Show version information and exit.\n\n"
-					"Example: %s -fmandelbrot --geom=640x480 -c-0.5,0.8 -s1.3\n"
+					"Example: %s -fmandelbrot --geom=640x480 -i170 -c-0.5,0.8 -s1.3\n"
 					,argv[0],argv[0]); 
 				exit(EXIT_FAILURE);
 		}
@@ -265,9 +265,9 @@ int main(int argc, char* argv[])
 	#ifdef DEBUG
 	fprintf(stderr,"Render function %p\n",plugin_fractal_calculate_function);
 	#endif
-			
+	
 	/* Render the fractal. */
-	//render(render_param,plugin_fractal_type_calculate_f,fractal_argc,fractal_argv); 
+	render(render_param,plugin_fractal_calculate_function,fractal_argc,fractal_argv); 
 
 	/* That was it. Bye! */
 	exit(EXIT_SUCCESS);

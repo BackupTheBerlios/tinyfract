@@ -1,10 +1,22 @@
 #include "../common.h"
+#include "stdio.h"
+
+
+
+/* Exported constants for the mandelbrot function */
+
+#if 0
+const plugin_fractal_constants_t plugin_fractal_constants_mandelbrot=
+{
+	iteration_steps: 170;
+}
+#endif
 
 /* Mandelbrot fractal function */
-real_number_t plugin_fractal_calculate_mandelbrot(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[])
+ordinal_number_t plugin_fractal_calculate_mandelbrot(const complex_number_t position, const ordinal_number_t iteration_steps, const ordinal_number_t argc, const real_number_t argv[])
 {
 	/* Mandelbrot fractal constants. */
-	const real_number_t  bailout_square=4;
+	const real_number_t bailout_square=4;
 
 	/* Two helper variables. */
 	real_number_t    radius_square;
@@ -25,9 +37,10 @@ real_number_t plugin_fractal_calculate_mandelbrot(const complex_number_t positio
 	 * For the Mandelbrot fractal the parameter C is set to the starting point
 	 * on the complex plane. Julia fractals needs this parameter to be set to
 	 * a fixed number.
-     */
+	 */
 	complex_number_t C;
 
+	
 	/* Determine if Julia mode is requested. */
 	if (argc>1) 
 	{
@@ -59,5 +72,5 @@ real_number_t plugin_fractal_calculate_mandelbrot(const complex_number_t positio
 		Re(Z)=Z_helper;
 	}
 
-	return (real_number_t) step; /* Return the iteration step which reached the bailout radius */
+	return step; /* Return the iteration step which reached the bailout radius */
 }
