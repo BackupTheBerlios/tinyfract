@@ -56,15 +56,21 @@ entry .param_second.scale
 .param_second.scale insert 0 "xxx"
 
 toplevel .error
-label .error.error
+label .error.bitmap -bitmap error
+label .error.message -text "test"
+button .error.exit -text "OK" -command "wm withdraw .error"
+button .error.return -text "Cancel" -command {wm withdraw .error}
+#bind .error.return <ButtonPress> {return}
+bind .error.exit <ButtonPress> "set test 5"
+bind .error.return <ButtonPress> "set test 5"
 
-wm geometry .error [ expr [ winfo screenwidth . ] / 2 ]x[ expr [ winfo screenheight . ] / 2 ]
+wm withdraw .error
 
-wm iconify .error
 
 proc render {} \
 {
-	catch {
+	global test
+	
 	set fractal [ .param_first.fractal get ]
 	set geom [ .param_first.geom get ]
 	set plug_path [ .param_first.plug_path get ]
@@ -79,8 +85,9 @@ proc render {} \
 
 	if ([regexp "xxx" $fractal]==1) \
 	{
-		puts "You have to specify a fractal type"
-		exit
+		wm deiconify .error
+		.error.message configure -text "You have to specify a fractal type"
+		return
 	} else \
 	{
 		set help $fractal
@@ -89,8 +96,9 @@ proc render {} \
 
 	if ([regexp "xxx" $geom]==1) \
 	{
-		puts "You have to specify a geometry"
-		exit
+		wm deiconify .error
+		.error.message configure -text "You have to specify a geometry"
+		return
 	} else \
 	{
 		set help $geom
@@ -99,8 +107,10 @@ proc render {} \
 
 	if ([regexp "xxx" $plug_path]==1) \
 	{
-		puts "You did not specified a plugin path but if you have difined a plugin path\nin the environmental variable TINYFRACT_PLUGIN_PATH it is no problem"
-		after 5000
+		set test 0
+		wm deiconify .error
+		.error.message configure -text "You did not specified a plugin path but if you have difined a plugin path\nin the environmental variable TINYFRACT_PLUGIN_PATH it is no problem"
+		tkwait variable test
 		set plug_path ""
 	} else \
 	{
@@ -110,7 +120,7 @@ proc render {} \
 
 	if ([regexp "xxx" $center]==1) \
 	{
-		set center " "
+		set center ""
 	} else \
 	{
 		set help $center
@@ -118,7 +128,7 @@ proc render {} \
 	}
 	if ([regexp "xxx" $iter]==1) \
 	{
-		set iter " "
+		set iter ""
 	} else \
 	{
 		set help $iter
@@ -127,8 +137,10 @@ proc render {} \
 
 	if ([regexp "xxx" $out_meth]==1) \
 	{
-		puts "You did not specified a output method but if you have difined a output method\nin the environmental variable TINYFRACT_OUTPUT_METHOD it is no problem"
-		after 5000
+		set test 0
+		wm deiconify .error
+		.error.message configure -text "You did not specified an output method but if you have difined a output method\nin the environmental variable TINYFRACT_OUTPUT_METHOD it is no problem"
+		tkwait variable test
 		set out_meth ""
 	} else \
 	{
@@ -138,8 +150,10 @@ proc render {} \
 
 	if ([regexp "xxx" $ren_meth]==1) \
 	{
-		puts "You did not specified a render method but if you have difined a render method\nin the environmental variable TINYFRACT_RENDER_METHOD it is no problem"
-		after 5000
+		set test 0
+		wm deiconify .error
+		.error.message configure -text "You did not specified a render method but if you have difined a render method\nin the environmental variable TINYFRACT_RENDER_METHOD it is no problem"
+		tkwait variable test
 		set ren_meth ""
 	} else \
 	{
@@ -155,10 +169,46 @@ proc render {} \
 		set help $scale
 		set scale "-s$help"
 	}
-		
 
-	#exec "./tinyfract"
-	exec ./tinyfract $fractal $geom $plug_path $center $iter $out_meth -O$out_param $ren_meth -R$ren_param $scale}
+	if ([regexp "xxx" $ren_param]==1) \
+	{
+		set test 0
+		wm deiconify .error
+		.error.message configure -text "WARNING!!!: You did not specify render parameters but som render functions need parameters!!!"
+		tkwait variable test
+		set $ren_param ""
+	} else \
+	{
+		puts hallo
+		set help $ren_param
+		set ren_param "-R$help"
+	}
+
+	if ([regexp "xxx" $out_param]==1) \
+	{
+		set test 0
+		wm deiconify .error
+		.error.message configure -text "WARNING!!!: You did not specify output parameters but some output functions need parameters!!!"
+		tkwait variable test
+		set $ren_param ""
+	} else \
+	{
+		set help $out_param
+		set out_param "-O$help"
+	}
+
+	if { [ catch { exec ./tinyfract $fractal $geom $plug_path $center $iter $out_meth $out_param $ren_meth $ren_param $scale } error_message ] == 1 } \
+	{
+		toplevel .stdout
+		wm title .stdout "Message"
+		text .stdout.error -xscrollcommand ".stdout.scroll set"
+		scrollbar .stdout.scroll -orient vertical -command { .stdout.error yview }
+		button .stdout.exit -text "OK" -command "destroy .stdout"
+		.stdout.error insert end "Following message was given:\n\n$error_message\n\nIf You dont know waht the error means write an E-Mail to the programmers of this\nprogramm:\nJan Kandziora <jjj@gmx.de>\nAlexander Kreiss <AKreiss@gmx.de>\n"
+		pack .stdout.scroll -side right -fill y -expand 1
+		pack .stdout.error -expand 1 -fill both
+		pack .stdout.exit -expand 1 -fill both
+	}
 }
 
 
@@ -175,7 +225,11 @@ button .buttons.render \
 
 focus .param_first.fractal
 
-pack .error.error
+
+grid .error.message -row 0 -column 1
+grid .error.bitmap -row 0 -column 0
+grid .error.exit -row 1 -column 1
+grid .error.return -row 1 -column 0
 
 pack .topic.headline -expand 1 -fill both
 
