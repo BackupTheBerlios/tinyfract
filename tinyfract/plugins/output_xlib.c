@@ -44,9 +44,21 @@ int main(void)
 
 	/* Create a "Graphics Context" */
 	GC gc=XCreateGC(dpy,win,0,NULL);
+	
+	XGCValues gcpxval;
+	gcpxval.function=GXset;
+	GC gcpx=XCreateGC(dpy,pxmap,GCFunction,&gcpxval);
+	
 
 	/* Tell the GC we draw using the white color */
 	XSetForeground(dpy,gc,blackColor);
+		/* Fill a rectangle */
+		XFillRectangle(dpy,pxmap,gcpx,0,0,200,100);
+		/* Draw the line */
+		XDrawLine(dpy,pxmap,gc,10,60,180,20);
+		/* Draw a Rectangle */
+		XDrawRectangle (dpy,pxmap,gc,10,10,20,20);
+		/* Put Pixmap onto the window */
 
 	do
 	{
@@ -61,15 +73,15 @@ int main(void)
 			case ConfigureNotify:
 			case MotionNotify:	
 			case ButtonRelease:
-				/* Draw the line */
-			//	XDrawLine(dpy,pxmap,gc,10,60,180,20);
-				/* Draw a rectangle */
-				XDrawRectangle(dpy,pxmap,gc,200,100,0,0);
-				
-				/* Put Pixmap onto the window */
+			case MapWindow:
+			case MapRaised:
+			case MapSubwindows:
+			case ReparentWindow:
+			
+				/* Put fractal pixmap onto the window */
 				XCopyArea(dpy,pxmap,win,gc,0,0,200,100,0,0);
 				/* Send request to the server */
-				XFlush(dpy);
+			        XFlush(dpy);
 				break;	
 		}
 		sleep(1);
