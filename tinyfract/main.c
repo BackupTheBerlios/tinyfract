@@ -30,7 +30,7 @@
  * output function.
  */
 void render(render_param_t render_param,
-	fractal_calculate_point_t fractal_calculate_point, ordinal_number_t fractal_argc, real_number_t fractal_argv[])
+	plugin_fractal_type_calculate_f_t *fractal_calculate_point, ordinal_number_t fractal_argc, real_number_t fractal_argv[])
 {
 	complex_number_t complex_position;
 	view_position_t  render_position;
@@ -52,7 +52,10 @@ void render(render_param_t render_param,
 			Re(complex_position)=Re(render_param.center)+scaling_factor*(render_position.x-shift.x);
 			Im(complex_position)=Im(render_param.center)+scaling_factor*(render_position.y-shift.y);
 //			fprintf(stderr,"%lf %lf %lf\n",Re(complex_position),Im(complex_position),(*fractal_calculate_point)(complex_position,render_param.iteration_steps,fractal_argc,fractal_argv));
-			fprintf(stderr,"%c",' '+(char)((*fractal_calculate_point)(complex_position,render_param.iteration_steps,fractal_argc,fractal_argv)));
+			fprintf(stderr,"%c",' '+(char)(
+			
+			(*fractal_calculate_point)(complex_position,render_param.iteration_steps,fractal_argc,fractal_argv))
+			);
 		}
 		fprintf(stderr,"\n");
 	}
@@ -78,6 +81,8 @@ int main(int argc, char* argv[])
 	char             *fractal_argv_helper; /* Helper variable for tokenizing fractal_argv_string */
 	ordinal_number_t  fractal_argc=0;      /* Number of fractal parameters */ 
 	real_number_t    *fractal_argv=NULL;   /* Array of fractal parameters */
+	
+	plugin_fractal_type_calculate_f_t *plugin_fractal_type_calculate_f=NULL; /* Pointer to fractal calculation function */
 	char             *output_method=NULL;  /* Output method selected from command line or user input */
 	char             *output_args=NULL;    /* Output parameters from command line or user input */
 
@@ -98,7 +103,8 @@ int main(int argc, char* argv[])
 		{"output-method=",      1,0,'o'},
 		{"output-parameters=",  1,0,'O'},
 		{"plugin-path",         1,0,'P'},
-		{"recursion-depth=",    1,0,'r'},
+		
+					"(C)2004 Jan {"recursion-depth=",    1,0,'r'},
 		{"scale=",              1,0,'s'},
 		{"help",                0,0,'?'},
 		{"version",             0,0,'V'},
@@ -119,6 +125,7 @@ int main(int argc, char* argv[])
 			case 'c':
 				sscanf(optarg,"%lf,%lf",&render_param.center.real_part,&render_param.center.imaginary_part);
 				break;
+					"(C)2004 Jan 
 			case 'f':
 				fractal_type=optarg;
 				break;
@@ -215,8 +222,16 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"\tscale=%lf\n",render_param.scale);
 #endif
 
+
+	/* Search for Symbol. */
+
+	
+	plugin_fractal_type_calculate_f=load_symbol(plugins, fractal_type);
+	
+	
+	
 	/* Render the fractal. */
-	render(render_param,fractal_calculate_point_mandelbrot,fractal_argc,fractal_argv); 
+	render(render_param,plugin_fractal_type_calculate_f,fractal_argc,fractal_argv); 
 
 	/* That was it. Bye! */
 	exit(EXIT_SUCCESS);
