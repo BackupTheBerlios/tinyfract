@@ -33,7 +33,7 @@ label .info_second.ren_param -text "Render method parameters:"
 label .info_second.scale -text "Scale:"
 
 entry .param_first.fractal
-entry .param_first.geom 
+entry .param_first.geom
 entry .param_first.plug_path
 entry .param_first.center
 entry .param_first.iter
@@ -44,8 +44,27 @@ entry .param_second.ren_meth
 entry .param_second.ren_param
 entry .param_second.scale
 
+.param_first.fractal insert 0 "xxx"
+.param_first.geom insert 0 "xxx"
+.param_first.plug_path insert 0 "xxx"
+.param_first.center insert 0 "xxx"
+.param_first.iter insert 0 "xxx"
+.param_second.out_meth insert 0 "xxx"
+.param_second.out_param insert 0 "xxx"
+.param_second.ren_meth insert 0 "xxx"
+.param_second.ren_param insert 0 "xxx"
+.param_second.scale insert 0 "xxx"
+
+toplevel .error
+label .error.error
+
+wm geometry .error [ expr [ winfo screenwidth . ] / 2 ]x[ expr [ winfo screenheight . ] / 2 ]
+
+wm iconify .error
+
 proc render {} \
 {
+	catch {
 	set fractal [ .param_first.fractal get ]
 	set geom [ .param_first.geom get ]
 	set plug_path [ .param_first.plug_path get ]
@@ -56,9 +75,90 @@ proc render {} \
 	set ren_meth [ .param_second.ren_meth get ]
 	set ren_param [ .param_second.ren_param get ]
 	set scale [ .param_second.scale get ]
+	set help " "
 
-	exec "./tinyfract"
-	#exec "./tinyfract -f$fractal --geom=$geom -P$plug_path -c$center -i$iter -o$out_meth -O$out_param -r$ren_meth -R$ren_param -s$scale"
+	if ([regexp "xxx" $fractal]==1) \
+	{
+		puts "You have to specify a fractal type"
+		exit
+	} else \
+	{
+		set help $fractal
+		set fractal "-f$help"
+	}
+
+	if ([regexp "xxx" $geom]==1) \
+	{
+		puts "You have to specify a geometry"
+		exit
+	} else \
+	{
+		set help $geom
+		set geom "--geom=$help"
+	}
+
+	if ([regexp "xxx" $plug_path]==1) \
+	{
+		puts "You did not specified a plugin path but if you have difined a plugin path\nin the environmental variable TINYFRACT_PLUGIN_PATH it is no problem"
+		after 5000
+		set plug_path ""
+	} else \
+	{
+		set help $plug_path
+		set plug_path "-P$help"
+	}
+
+	if ([regexp "xxx" $center]==1) \
+	{
+		set center " "
+	} else \
+	{
+		set help $center
+		set center "-c$help"
+	}
+	if ([regexp "xxx" $iter]==1) \
+	{
+		set iter " "
+	} else \
+	{
+		set help $iter
+		set iter "-i$help"
+	}
+
+	if ([regexp "xxx" $out_meth]==1) \
+	{
+		puts "You did not specified a output method but if you have difined a output method\nin the environmental variable TINYFRACT_OUTPUT_METHOD it is no problem"
+		after 5000
+		set out_meth ""
+	} else \
+	{
+		set help $out_meth
+		set out_meth "-o$help"
+	}
+
+	if ([regexp "xxx" $ren_meth]==1) \
+	{
+		puts "You did not specified a render method but if you have difined a render method\nin the environmental variable TINYFRACT_RENDER_METHOD it is no problem"
+		after 5000
+		set ren_meth ""
+	} else \
+	{
+		set help $ren_meth
+		set ren_meth "-r$help"
+	}
+
+	if ([regexp "xxx" $scale]==1) \
+	{
+		set scale " "
+	} else \
+	{
+		set help $scale
+		set scale "-s$help"
+	}
+		
+
+	#exec "./tinyfract"
+	exec ./tinyfract $fractal $geom $plug_path $center $iter $out_meth -O$out_param $ren_meth -R$ren_param $scale}
 }
 
 
@@ -74,6 +174,8 @@ button .buttons.render \
 
 
 focus .param_first.fractal
+
+pack .error.error
 
 pack .topic.headline -expand 1 -fill both
 
