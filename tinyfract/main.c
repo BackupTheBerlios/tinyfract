@@ -253,7 +253,7 @@ int main(int argc, char* argv[])
 		perror("could not initialize output facility");
 		exit(EXIT_FAILURE);
 	}
-
+	fprintf(stderr,"HALLOOO");
 
 	/* Load render facility. */
 	if (!(render_facility=load_plugin_facility(plugin_path,plugin_facility_render,render_method)))

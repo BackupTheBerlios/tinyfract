@@ -65,6 +65,13 @@ typedef void (plugin_render_destructor_t)
 	 (void* handle);
 typedef void (plugin_render_function_t)
 	 (void* handle);
+typedef ordinal_number_t (plugin_render_calculate_function_t)
+	 (void* handle,
+	  const view_position_t render_postion);
+typedef void (plugin_render_fill_square_function_t)
+	 (void* handle,
+	  const view_position_t start_point,
+	  const int square_size);
 
 
 /* Plugin facility types. */
@@ -91,9 +98,11 @@ typedef struct
 
 typedef struct
 {
-	plugin_render_constructor_t* constructor;
-	plugin_render_destructor_t*  destructor;
-	plugin_render_function_t*    render_function;
+	plugin_render_constructor_t*          constructor;
+	plugin_render_destructor_t*           destructor;
+	plugin_render_function_t*             render_function;
+	plugin_render_calculate_function_t*   cache_calculator;
+	plugin_render_fill_square_function_t* fill_square;
 } plugin_facility_render_t;
 
 
