@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
 	/* Load fractal function. */
 	if ((plugin_fractal_calculate_function_name=
 		malloc(strlen(plugin_name)+strlen(fractal_name)+strlen(calculate_name)
-			+strlen(fractal_type))+1)==NULL)
+			+strlen(fractal_type)+1))==NULL)
 	{
 		perror("fractal_function, malloc");
 		exit(EXIT_FAILURE);
@@ -250,12 +250,12 @@ int main(int argc, char* argv[])
 	strcat(plugin_fractal_calculate_function_name,calculate_name);
 	strcat(plugin_fractal_calculate_function_name,fractal_type);
 
+
 	#ifdef DEBUG
 	fprintf(stderr,"Considering %s\n",plugin_fractal_calculate_function_name);
 	#endif
 	
-	if ((plugin_fractal_calculate_function=load_symbol("./plugins",fractal_type))==NULL)
-	//if ((plugin_fractal_calculate_function=load_symbol("./plugins",plugin_fractal_calculate_function_name))==NULL)
+	if ((plugin_fractal_calculate_function=load_symbol("./plugins",plugin_fractal_calculate_function_name))==NULL)
 	{
 		fprintf(stderr,"%s: Could not load fractal function %s.\n",argv[0],fractal_type);
 		exit(EXIT_FAILURE);
