@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 	view_dimension_t geometry;
 	ordinal_number_t iteration_steps;
 	real_number_t    scale;
-        const char*      plugin_path;
+        char*            plugin_path=NULL;
 
 	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
@@ -242,6 +242,13 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"\tscale=%lf\n",scale);
 #endif
 
+	/* Test if plugin path was given. */
+	if (!plugin_path)
+	{
+		fprintf(stderr,"%s: You have to specify a plugin path.\n",argv[0]);
+		exit(EXIT_FAILURE);
+	}
+	
 	/* Test if fractal type was given. */
 	if (!fractal_type)
 	{
