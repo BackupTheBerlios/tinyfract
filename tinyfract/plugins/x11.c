@@ -5,8 +5,7 @@
 #include "../plugin.h"
 
 #define MAX_COLORS 65536
-#define COLOR_CEILING 65536
-#define iteration_steps 1000
+#define COLOR_CEILING 65535
 
 typedef struct
 {
@@ -21,25 +20,41 @@ typedef struct
 
 
 /* Color mapping functions. */
-float R(int n, int x)
+float Rh(float H)
 {
-        if(x<n/3) return 1-(float)(3*x)/n;
-        else if (x>n*2/3) return (float)(3*x)/n-2;
-        else return 0;
+	if(H<1/3) return 1-(3*H);	
+	else if (H>2/3) return 3*H-2;
+	else return 0;
 }
 
-float G(int n, int x)
+float Gh(float H)
 {
-        if(x<n/3) return (float)(3*x)/n;
-        else if (x>n*2/3) return 0;
-        else return 2-(float)(3*x)/n;
+	if(H<1/3) return (3*H);	
+	else if (H>2/3) return 0;
+	else return 2-(3*H);
 }
 
-float B(int n, int x)
+float Bh(float H)
 {
-        if(x<n/3) return 0;
-        else if (x>n*2/3) return 3-(float)(3*x)/n;
-        else return (float)(3*x)/n-1;
+	if(H<1/3) return 0;	
+	else if (H>2/3) return 3-(3*H);
+	else return (3*H)-1;
+}
+
+
+float R(float H,float S,float Br)
+{
+	return Br+Rh(H)*S*(1-Br);
+}
+
+float G(float H,float S,float Br)
+{
+	return Br+Gh(H)*S*(1-Br);
+}
+
+float B(float H,float S,float Br)
+{
+	return Br+Bh(H)*S*(1-Br);
 }
 
 /* Constructor and destructor for X11 output. */
@@ -47,6 +62,14 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 {
 	x11_t* context;
 	int    i;
+	float  H;
+	float  S;
+	float  Br;
+	const int Hmax=50;
+	const int Smax=20;
+	const int Brmax=10;
+
+	const int iteration_steps=Hmax*Smax*Brmax;
 	
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(x11_t)))) return NULL;
@@ -72,14 +95,29 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 	/* Allocate colors */
 	for(i=0;i<iteration_steps;i++)
 	{
-		context->colors[i].red=  R(iteration_steps,i)*COLOR_CEILING;
-		context->colors[i].green=G(iteration_steps,i)*COLOR_CEILING;
-		context->colors[i].blue= B(iteration_steps,i)*COLOR_CEILING;
+		int x=i;
+		
+		S=(float)(x%Smax)/Smax;
+		x=x/Smax;
+		
+		Br=(float)(x%Brmax)/Brmax;
+		//x=x/Brmax;
+		
+		H=(float)(x%Hmax)/Hmax;
+		x=x/Hmax;
+		
+		
+
+
+		context->colors[i].red=  R(H,S,Br)*COLOR_CEILING;
+		context->colors[i].green=G(H,S,Br)*COLOR_CEILING;
+		context->colors[i].blue= B(H,S,Br)*COLOR_CEILING;
+		
 		context->colors[i].flags=DoRed|DoGreen|DoBlue;
 		XAllocColor(context->dpy,DefaultColormap(context->dpy,DefaultScreen(context->dpy)),
 			&context->colors[i]);
 	}
-		
+	
 	/* Return the handle. */
 	return context;
 }
