@@ -8,7 +8,7 @@
 
 #include "common.h"
 
-void *load_plugins(char* plugin_path, char* output_method)
+void *load_symbol(const char* plugin_path, const char* symbol)
 { 
 	struct dirent* dir_stream;
 	void*          dl_handle;
@@ -58,7 +58,7 @@ void *load_plugins(char* plugin_path, char* output_method)
 				}
 				else
 				{
-					fp=dlsym(dl_handle,output_method);
+					fp=dlsym(dl_handle,symbol);
 					if (fp!=NULL) goto end;
 					dlclose(dl_handle);
 						

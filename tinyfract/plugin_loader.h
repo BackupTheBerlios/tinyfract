@@ -1,6 +1,7 @@
 #ifndef PLUGIN_LOADER_H
 #define PLUGIN_LOADER_H
 
-int load_library(char* plugin_name);
+void *load_symbol(const char* plugin_path, const char* symbol);
+
 
 #endif
