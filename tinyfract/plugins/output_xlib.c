@@ -21,6 +21,7 @@ int main(void)
 	Display *dpy;
 	XEvent   event;
 	Window   win;
+ 	Pixmap   pxmap;
 
 	/* Open the display */
 	assert(dpy=XOpenDisplay(NULL));
@@ -31,7 +32,10 @@ int main(void)
 
 	/* Create the window */
 	win=XCreateSimpleWindow(dpy,DefaultRootWindow(dpy),0,0,200,100,0,whiteColor,whiteColor);
+	/* Pixmap */
+	pxmap=XCreatePixmap(dpy,DefaultRootWindow(dpy),200,100,16);
 
+	
 	/* We want to get MapNotify events */
 	XSelectInput(dpy,win,StructureNotifyMask);
 
@@ -58,8 +62,13 @@ int main(void)
 			case MotionNotify:	
 			case ButtonRelease:
 				/* Draw the line */
-				XDrawLine(dpy,win,gc,10,60,180,20);
-				/* Send the "DrawLine" request to the server */
+			//	XDrawLine(dpy,pxmap,gc,10,60,180,20);
+				/* Draw a rectangle */
+				XDrawRectangle(dpy,pxmap,gc,200,100,0,0);
+				
+				/* Put Pixmap onto the window */
+				XCopyArea(dpy,pxmap,win,gc,0,0,200,100,0,0);
+				/* Send request to the server */
 				XFlush(dpy);
 				break;	
 		}
