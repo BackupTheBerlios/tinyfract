@@ -23,7 +23,8 @@ typedef ordinal_number_t (plugin_fractal_calculate_function_t)
 
 /* Function types for the output facility. */
 typedef void* (plugin_output_constructor_t)
-	(const view_dimension_t dimension);
+	(const view_dimension_t dimension,
+	 const char args[]);
 
 typedef void (plugin_output_destructor_t)
 	 (void* handle);

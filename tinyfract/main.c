@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"Initializing output facility.\n");
 	#endif
 	
-	if (!(output=(*output_facility->facility.output.constructor)(geometry)))
+	if (!(output=(*output_facility->facility.output.constructor)(geometry,output_args)))
 	{
 		perror("could not initialize output facility");
 		exit(EXIT_FAILURE);

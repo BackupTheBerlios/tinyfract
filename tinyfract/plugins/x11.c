@@ -6,7 +6,7 @@
 
 #define MAX_COLORS 65536
 #define COLOR_CEILING 65535
-
+/* ganbang in da house */
 typedef struct
 {
 	XGCValues gcpxval;
@@ -58,18 +58,18 @@ float B(float H,float S,float Br)
 }
 
 /* Constructor and destructor for X11 output. */
-static x11_t* constructor_x11(const view_dimension_t dimension)
+static x11_t* constructor_x11(const view_dimension_t dimension, const char args[])
 {
 	x11_t* context;
 	int    i;
 	float  H;
 	float  S;
 	float  Br;
-	const int Hmax=50;
-	const int Smax=20;
-	const int Brmax=10;
+	int Hmax=50;
+	int Smax=20;
+	int Brmax=10;
 
-	const int iteration_steps=Hmax*Smax*Brmax;
+	int iteration_steps;
 	
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(x11_t)))) return NULL;
@@ -78,7 +78,6 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 	/* Open the display. */
 	context->dpy=XOpenDisplay(NULL);
 	
-
 	/* Create the window. */
 	int bgColor=WhitePixel(context->dpy,DefaultScreen(context->dpy));
 	context->win=XCreateSimpleWindow(context->dpy,DefaultRootWindow(context->dpy),
@@ -92,16 +91,31 @@ static x11_t* constructor_x11(const view_dimension_t dimension)
 	context->gc=XCreateGC(context->dpy,context->win,0,NULL);
 	context->gcpx=XCreateGC(context->dpy,context->pxmap,0,NULL);
 
+
+
+
+	
+	
+	/* Just for help now. */
+	iteration_steps=Hmax*Smax*Brmax;
+
+
+
+
+	
+	
 	/* Allocate colors */
 	for(i=0;i<iteration_steps;i++)
 	{
 		int x=i;
 		
+
+		
 		S=(float)(x%Smax)/Smax;
 		x=x/Smax;
 		
 		Br=(float)(x%Brmax)/Brmax;
-		//x=x/Brmax;
+		x=x/Brmax;
 		
 		H=(float)(x%Hmax)/Hmax;
 		x=x/Hmax;
@@ -137,7 +151,7 @@ void blit_rect_x11(x11_t* handle, const view_position_t position, const view_dim
 void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
 {
 	/* Fill a rectangle. */
-	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y,dimension.weight,dimension.height);
+	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y,dimension.width,dimension.height);
 }
 
 /* Put pixel into X11 viewport. */
