@@ -1,14 +1,15 @@
 .PHONY: all clean
 
-CC=gcc
+CC=gcc-3.0
 CFLAGS=-O3 -fPIC
-LD=gcc
+LD=gcc-3.0
 LDFLAGS=
 RM=/bin/rm
 
 
-all: aa.so lambda.so mandelbrot.so
-#output_xlib.so 
+all: lambda.so mandelbrot.so
+#all: aa.so lambda.so mandelbrot.so
+#output_xlib.so
 clean:
 	$(RM) -f *.o *.so
 
