@@ -1,13 +1,13 @@
 .PHONY: all clean
 
 CC=gcc-3.0
-CFLAGS=-Wall -O2 -DDEBUG
+CFLAGS=-Wall -O2 -lgmp -DDEBUG
 LD=gcc-3.0
 LDFLAGS=
 MAKE=make
 RM=/bin/rm
 
-all: tinyfract
+all: tinyfract existenv
 	$(MAKE) -C plugins
 
 clean:
@@ -26,3 +26,5 @@ param_parser.o: param_parser.c common.h param_parser.h
 tinyfract: main.o plugin_loader.o param_parser.o
 	$(LD) $(LDFLAGS) -ldl -o $@ $^ 
 
+existenv: existenv.c
+	$(LD) $(LDFLAGS) -o $@ $^
