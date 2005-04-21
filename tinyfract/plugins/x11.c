@@ -203,7 +203,8 @@ void flush_viewport_x11(x11_t* handle)
 	XWindowAttributes attributes;
 	
 	/* We want to get MapNotify events for our window. */
-	XSelectInput(handle->dpy,handle->win,StructureNotifyMask);
+	//XSelectInput(handle->dpy,handle->win,StructureNotifyMask);
+	XSelectInput(handle->dpy,handle->win,0xffffff);
 
 	/* Now "map" the window (that is, make it appear on the screen). */
 	XMapWindow(handle->dpy,handle->win);
@@ -211,30 +212,34 @@ void flush_viewport_x11(x11_t* handle)
 	/* Get window size. */
 	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
 	
-	do
+	for(;;)
 	{
 		/* Wait for an event. */
-		XNextEvent(handle->dpy,&event);
-
+		XWindowEvent(handle->dpy,handle->win,0xffffff,&event);
+		fprintf(stderr,"Event: %d\n",event.type);
 		switch (event.type)
 		{
-			case MapNotify:
-			case Expose:
 			case ButtonPress:
+				fprintf(stderr,"Button Pressed\n");
+				printf("c%d,%d\n",event.xbutton.x,event.xbutton.y);
+				goto exit_func;
+			case MapNotify:
+			case PropertyNotify:
+			case ReparentNotify:
 			case ConfigureNotify:
-			case MotionNotify:	
-			case ButtonRelease:
-			default:
 				/* Put double buffer onto the window. */
 				XCopyArea(handle->dpy,handle->pxmap,handle->win,handle->gc,
 						0,0,attributes.width,attributes.height,0,0);
 				/* Send request to the server */
 			        XFlush(handle->dpy);
 				break;	
+			default:
+				break;
 		}
-		sleep(1);
 	}
-	while (1);
+
+exit_func: 
+	return;
 }
 
 
