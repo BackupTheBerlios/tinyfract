@@ -47,12 +47,13 @@ int main(int argc, char* argv[])
 	
 	/* Variables and constants for option parsing. */
 	complex_number_t center;
+	char             command;
 	int              flags=0;
 	view_dimension_t geometry;
 	ordinal_number_t iteration_steps;
 	real_number_t    scale;
         char*            plugin_path=NULL;
-
+	
 	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
 	const int ITERATION_STEPS_SET=4;
@@ -63,17 +64,17 @@ int main(int argc, char* argv[])
 	int option_index=0;
 	static struct option long_options[] =
 	{
-		{"center=",             1,0,'c'},
+//		{"center=",             1,0,'c'},
 		{"fractal-type=",       1,0,'f'},
 		{"fractal-parameters=", 1,0,'F'},
 		{"geometry=",           1,0,'g'},
-		{"iteration-steps=",    1,0,'i'},
+//		{"iteration-steps=",    1,0,'i'},
 		{"output-method=",      1,0,'o'},
 		{"output-parameters=",  1,0,'O'},
 		{"plugin-path=",        1,0,'P'},
 		{"render-method=",      1,0,'r'},
 		{"render-parameters=",  1,0,'R'},
-		{"scale=",              1,0,'s'},
+//		{"scale=",              1,0,'s'},
 		{"help",                0,0,'?'},
 		{"version",             0,0,'V'},
 		{0,0,0,0}
@@ -83,15 +84,16 @@ int main(int argc, char* argv[])
 	/* Parse options. */
 	for (;;)
 	{
-		c=getopt_long(argc,argv,"c:f:F:g:i:o:O:P:r:R:s:",long_options,&option_index);
+//		c=getopt_long(argc,argv,"c:f:F:g:i:o:O:P:r:R:s:",long_options,&option_index);
+		c=getopt_long(argc,argv,"f:F:g:o:O:P:r:R:",long_options,&option_index);
 		if (c==-1) break;
 
 		switch (c)
 		{
-			case 'c':
+/*			case 'c':
 				sscanf(optarg,"%lf,%lf",&Re(center),&Im(center));
 				flags|=CENTER_SET;
-				break;
+				break;*/
 			case 'f':
 				fractal_type=optarg;
 				break;
@@ -102,10 +104,10 @@ int main(int argc, char* argv[])
 				sscanf(optarg,"%ux%u",&geometry.width,&geometry.height);
 				flags|=GEOMETRY_SET;
 				break;
-			case 'i':
+/*			case 'i':
 				sscanf(optarg,"%d",&iteration_steps);
 				flags|=ITERATION_STEPS_SET;
-				break;
+				break;*/
 			case 'o':
 				output_method=optarg;
 				break;
@@ -121,10 +123,10 @@ int main(int argc, char* argv[])
 			case 'R':
 				render_args=optarg;
 				break;
-			case 's':
+/*			case 's':
 				sscanf(optarg,"%lf",&scale);
 				flags|=SCALE_SET;
-				break;
+				break;*/
 			case 'V':
 				fprintf(stderr,
 					"%s: Version %s-%s, build by %s at %s on %s\n"
@@ -138,7 +140,7 @@ int main(int argc, char* argv[])
 					"(C)2004 Jan Kandziora <jjj@gmx.de>, Copy left by the means of GNU GPL v2\n"
 					"See http://www.gnu.org/licenses/gpl.txt for details.\n\n"
 					"USAGE: %s [OPTIONS]\n"
-					"  -c, --center=             Center of the picture in the complex plane. Format: Re,Im.\n"
+//					"  -c, --center=             Center of the picture in the complex plane. Format: Re,Im.\n"
 					"                              Defaults to fractal function's choice.\n"
 					"  -f, --fractal-type=       Select the fractal formula. A plugin has to provide the\n"
 					"                              formula. Default is prompting the user.\n"
@@ -146,7 +148,7 @@ int main(int argc, char* argv[])
 					"                              fractal formula needs any.\n"
 					"  -g, --geometry=           Output picture size in pixels. Format: Width x Height.\n"
 					"                              Defaults to output plugin's choice.\n"
-					"  -i, --iteration-steps=    Sets the maximum count of iterations per point.\n"
+//					"  -i, --iteration-steps=    Sets the maximum count of iterations per point.\n"
 					"                              Defaults to fractal function's choice.\n"
 					"  -o, --output-method=      Specifies the output method. A plugin has to provide it.\n"
 					"                              If no output method is given a default value from the\n"
@@ -159,7 +161,7 @@ int main(int argc, char* argv[])
 					"  -r, --render-method=      Specifies the render method. A plugin has to provide it.\n"
 					"  -R, --render-parameters=  Specifies additional parameters passed to the render\n"
 					"                              function.\n"
-					"  -s, --scale=              Scale: Baseline with of the rendered picture in the complex\n"
+//					"  -s, --scale=              Scale: Baseline with of the rendered picture in the complex\n"
 					"                              coordinate system. Defaults to fractal function's choice.\n"
 					"      --help                Show this help and exit.\n"
 					"      --version             Show version information and exit.\n\n"
@@ -230,7 +232,8 @@ int main(int argc, char* argv[])
 	#endif
 	
 	if (!(fractal=(*fractal_facility->facility.fractal.constructor)
-		((flags & ITERATION_STEPS_SET?iteration_steps:fractal_facility->facility.fractal.iteration_steps),fractal_args)))
+//		((flags & ITERATION_STEPS_SET?iteration_steps:fractal_facility->facility.fractal.iteration_steps),fractal_args)))
+		(fractal_facility->facility.fractal.iteration_steps,fractal_args)))
 	{
 		perror("could not initialize fractal facility");
 		exit(EXIT_FAILURE);
@@ -261,14 +264,45 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
+
+/* Hier muss die Hauptschleife beginnen. */
+
+	#ifdef DEBUG
+	fprintf(stderr,"parameter from stdin:\n");
+	#endif
+
+	while (!feof(stdin))
+	{	
+		scanf("%c",&command);
+		switch (command)
+		{
+			case 'p':
+				scanf("%lf,%lf",&Re(center),&Im(center));
+				flags|=CENTER_SET;
+				break;
+			case 's':
+				scanf("%lf",&scale);
+				flags|=SCALE_SET;
+				break;
+			case 'i':
+				scanf("%u",&iteration_steps);
+				break;
+			case 'r':
+				printf("position: %lf,%lf\n",Re(center),Im(center));
+				printf("scale: %lf\n",scale);
+				printf("iteration_steps: %u\n",iteration_steps);
+
+				
 	/* Initialize the render facility. */
 	#ifdef DEBUG
 	fprintf(stderr,"Initializing render facility.\n");
 	#endif
 	if (!(render=(*render_facility->facility.render.constructor)
 		(flags & CENTER_SET?center:fractal_facility->facility.fractal.center,
+//		(fractal_facility->facility.fractal.center,
 		 geometry,
 		 flags & SCALE_SET?scale:fractal_facility->facility.fractal.scale,
+//		 fractal_facility->facility.fractal.scale,
 		 fractal_facility,output_facility,fractal,output,render_args)))
 	{
 		perror("could not initialize render facility");
@@ -292,28 +326,36 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"Waiting.\n");
 	#endif
 
-	sleep(10);
-
 	/* Free the render facility used. */
 	#ifdef DEBUG
 	fprintf(stderr,"Closing render facility.\n");
 	#endif
 	(*render_facility->facility.render.destructor)(render);
 
+
+				
+				
+				break;
+			case '\n':
+				break;
+			default:
+				printf("fehler\n");
+		}
+	}
+/* Hier ist das Ende der Hauptschleife. */
+
+	
 	/* Free the output facility used. */
 	#ifdef DEBUG
 	fprintf(stderr,"Closing output facility.\n");
 	#endif
-
 	(*output_facility->facility.output.destructor)(output);
 
 	/* Free the fractal facility used. */
 	#ifdef DEBUG
 	fprintf(stderr,"Closing fractal facility.\n");
 	#endif
-
 	(*fractal_facility->facility.fractal.destructor)(fractal);
-
 
 	/* That was it. Bye! */
 	exit(EXIT_SUCCESS);
