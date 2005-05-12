@@ -18,7 +18,7 @@ typedef void (plugin_fractal_destructor_t)
 
 typedef ordinal_number_t (plugin_fractal_calculate_function_t)
 	(void* handle,
-	 const complex_number_t position);
+	 const complex_number_t* position);
 
 
 /* Function types for the output facility. */

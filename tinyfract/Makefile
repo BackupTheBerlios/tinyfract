@@ -7,7 +7,7 @@ LDFLAGS=
 MAKE=make
 RM=/bin/rm
 
-all: tinyfract existenv
+all: tinyfract
 	$(MAKE) -C plugins
 
 clean:

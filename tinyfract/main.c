@@ -7,6 +7,7 @@
  */
 
 #include <getopt.h>
+#include <gmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,15 +45,18 @@ int main(int argc, char* argv[])
 	char*                    render_method=NULL;  /* Render method selected from command line or user input. */
 	const plugin_facility_t* render_facility;     /* Render plugin facility */
 	char*                    render_args=NULL;    /* Render parameters from command line or user input. */
+	long long int            prec=0;              /* Precision from command line or user input. */
 	
 	/* Variables and constants for option parsing. */
-	complex_number_t center;
+	char*            center_real=NULL;
+	char*            center_imaginary=NULL;
 	char             command;
 	int              flags=0;
 	view_dimension_t geometry;
 	ordinal_number_t iteration_steps;
-	real_number_t    scale;
+	char*            scale=NULL;
         char*            plugin_path=NULL;
+	char*            help;
 	
 	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
@@ -74,6 +78,7 @@ int main(int argc, char* argv[])
 		{"plugin-path=",        1,0,'P'},
 		{"render-method=",      1,0,'r'},
 		{"render-parameters=",  1,0,'R'},
+		{"precision=",          1,0,'p'},
 //		{"scale=",              1,0,'s'},
 		{"help",                0,0,'?'},
 		{"version",             0,0,'V'},
@@ -85,7 +90,7 @@ int main(int argc, char* argv[])
 	for (;;)
 	{
 //		c=getopt_long(argc,argv,"c:f:F:g:i:o:O:P:r:R:s:",long_options,&option_index);
-		c=getopt_long(argc,argv,"f:F:g:o:O:P:r:R:",long_options,&option_index);
+		c=getopt_long(argc,argv,"f:F:g:o:O:P:r:R:p:",long_options,&option_index);
 		if (c==-1) break;
 
 		switch (c)
@@ -94,6 +99,11 @@ int main(int argc, char* argv[])
 				sscanf(optarg,"%lf,%lf",&Re(center),&Im(center));
 				flags|=CENTER_SET;
 				break;*/
+			case 'p':
+				sscanf(optarg,"%lld", &prec);
+//				prec=100;
+				fprintf(stderr,"Hallo\n");
+				break;
 			case 'f':
 				fractal_type=optarg;
 				break;
@@ -163,6 +173,7 @@ int main(int argc, char* argv[])
 					"                              function.\n"
 //					"  -s, --scale=              Scale: Baseline with of the rendered picture in the complex\n"
 					"                              coordinate system. Defaults to fractal function's choice.\n"
+					"  -p, --precision=          Set the number of Nachkommastellen.\n"
 					"      --help                Show this help and exit.\n"
 					"      --version             Show version information and exit.\n\n"
 					"Example: %s -fmandelbrot --geom=640x480 -i170 -c-0.5,0.8 -s1.3\n"
@@ -173,13 +184,13 @@ int main(int argc, char* argv[])
 
 #ifdef DEBUG
 	fprintf(stderr,"Command line parameters are:\n");
-	fprintf(stderr,"\tcenter=%f;%f\n",Re(center),Im(center));
+//	fprintf(stderr,"\tcenter=%f;%f\n",Re(center),Im(center));
 	fprintf(stderr,"\tfractal-type=%s\n",fractal_type);
 	fprintf(stderr,"\tfractal-parameters=%s\n",fractal_args);
 	fprintf(stderr,"\tgeometry=%dx%d\n",geometry.width,geometry.height);
 	fprintf(stderr,"\titeration-steps=%d\n",iteration_steps);
 	fprintf(stderr,"\toutput-method=%s\n",output_method);
-	fprintf(stderr,"\tscale=%lf\n",scale);
+//	fprintf(stderr,"\tscale=%lf\n",scale);
 #endif
 
 	/* Test if plugin path was given. */
@@ -233,7 +244,7 @@ int main(int argc, char* argv[])
 	
 	if (!(fractal=(*fractal_facility->facility.fractal.constructor)
 //		((flags & ITERATION_STEPS_SET?iteration_steps:fractal_facility->facility.fractal.iteration_steps),fractal_args)))
-		(fractal_facility->facility.fractal.iteration_steps,fractal_args)))
+		(fractal_facility->facility.fractal.iteration_steps,prec,fractal_args)))
 	{
 		perror("could not initialize fractal facility");
 		exit(EXIT_FAILURE);
@@ -277,19 +288,35 @@ int main(int argc, char* argv[])
 		switch (command)
 		{
 			case 'p':
-				scanf("%lf,%lf",&Re(center),&Im(center));
+				if(prec==0)
+				{
+					fprintf(stderr,"%s: You have to specify a precision greater than zero!\n", argv[0]);
+					exit(EXIT_FAILURE);
+				}
+				help=malloc(sizeof(char)*(prec*2+2));
+				center_real=malloc(sizeof(char)*(prec+1));
+				center_imaginary=malloc(sizeof(char)*(prec+1));
+				scanf("%s", help);
+				center_real=strtok(help,",");
+				center_imaginary=strtok(NULL,",");
 				flags|=CENTER_SET;
 				break;
 			case 's':
-				scanf("%lf",&scale);
+				if(prec==0)
+				{
+					fprintf(stderr,"%s: You have to specify a precision greater than zero!\n", argv[0]);
+					exit(EXIT_FAILURE);
+				}
+				scale=malloc(sizeof(char)*(prec+1));
+				scanf("%s",scale);
 				flags|=SCALE_SET;
 				break;
 			case 'i':
 				scanf("%u",&iteration_steps);
 				break;
 			case 'r':
-				printf("position: %lf,%lf\n",Re(center),Im(center));
-				printf("scale: %lf\n",scale);
+				printf("position: %s,%s\n",center_real,center_imaginary);
+				printf("scale: %s\n",scale);
 				printf("iteration_steps: %u\n",iteration_steps);
 
 				
@@ -298,12 +325,12 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"Initializing render facility.\n");
 	#endif
 	if (!(render=(*render_facility->facility.render.constructor)
-		(flags & CENTER_SET?center:fractal_facility->facility.fractal.center,
+		(center_real,center_imaginary,
 //		(fractal_facility->facility.fractal.center,
 		 geometry,
-		 flags & SCALE_SET?scale:fractal_facility->facility.fractal.scale,
+		 scale,
 //		 fractal_facility->facility.fractal.scale,
-		 fractal_facility,output_facility,fractal,output,render_args)))
+		 fractal_facility,output_facility,fractal,output,render_args,100)))
 	{
 		perror("could not initialize render facility");
 		exit(EXIT_FAILURE);
