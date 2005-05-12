@@ -10,12 +10,14 @@
 #define Im(z) (z).imaginary_part
 
 
+#include <gmp.h>
+
 /*
  * Some useful typedefs. Useful, if we ever have to change it, maybe when
  * we want to use an arbitrary precision calculating library later.
  */
 typedef unsigned int ordinal_number_t;
-typedef double       real_number_t;
+typedef mpf_t        real_number_t;
 
 typedef struct
 {
@@ -34,8 +36,8 @@ typedef struct
 
 typedef struct
 {
-	int x;
-	int y;
+	unsigned int x;
+	unsigned int y;
 } view_position_t;
 
 typedef unsigned int pixel_value;

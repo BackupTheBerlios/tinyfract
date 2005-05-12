@@ -1,3 +1,4 @@
+#include <gmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "../common.h"
@@ -10,20 +11,26 @@ typedef struct
 {
 	ordinal_number_t iteration_steps;
 	complex_number_t lambda;
+	long long int    prec;
 } lambda_t;
 
 /* Constructor and destructor for Lambda fractal. */
-static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, const char args[])
+static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, long long int prec, const char args[])
 {
 	lambda_t* context;
 	
 	/* Get memory for the fractal context. */
 	if (!(context=malloc(sizeof(lambda_t)))) return NULL;
 
+	mpf_set_default_prec(sizeof(char)*prec);
+
+	mpf_init(Re(context->lambda));
+	mpf_init(Im(context->lambda));
+
 	/* Set the fractal context. */
 	context->iteration_steps=iteration_steps;
 	
-	
+	#if 0
 	if(args)
 	{
 		if(strchr(args,',')==0)
@@ -38,9 +45,15 @@ static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, cons
 		Re(context->lambda)=1;
 		Im(context->lambda)=0;
 	}
+	#endif
+
+	mpf_set_d(Re(context->lambda),1);
+	mpf_set_d(Im(context->lambda),0);
+
+	context->prec=prec;
 
  	#ifdef DEBUG 
-	fprintf(stderr,"Lambda parameter: %s,%lf,%lf\n",args,Re(context->lambda),Im(context->lambda));
+	gmp_fprintf(stderr,"Lambda parameter: %s,%F.10f,%F.10f\n",args,Re(context->lambda),Im(context->lambda));
 	#endif
 
 	/* Return the handle. */
@@ -49,18 +62,31 @@ static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, cons
 
 static void destructor_lambda(lambda_t* handle)
 {
+	mpf_clear(Re(handle->lambda));
+	mpf_clear(Im(handle->lambda));
 	free(handle);
 }
 
 /* Lambda formula: z(0)=p, lambda=const., z(n+1) = lambda*z(n)*(1 - z(n)). */
-static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_t position)
+static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_t* position)
 {
+	mpf_set_default_prec(sizeof(char)*handle->prec);
+	
 	/* Lambda fractal constants. */
-	const real_number_t bailout_square=4;
+	real_number_t bailout_square;
 
-	/* Two helper variables. */
+	mpf_init(bailout_square);
+	mpf_set_d(bailout_square,4);
+
+	/* Three helper variables. */
 	real_number_t    radius_square;
+	mpf_t            help;
+	mpf_t            help_two;
 	ordinal_number_t step;
+	
+	mpf_init(radius_square);
+	mpf_init(help);
+	mpf_init(help_two);
 
 	/*
 	 * Z stores the complex number during the iterations, Zn is the next iteration step.
@@ -68,41 +94,87 @@ static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_
 	complex_number_t Z;
 	complex_number_t Zn;
 
+	mpf_init(Re(Z));
+	mpf_init(Im(Z));
+	mpf_init(Re(Zn));
+	mpf_init(Im(Zn));
+
 	/* These ones accelerate the calculation. */
 	complex_number_t Z_square;
 	real_number_t    ReZs_ImZs;
 	real_number_t    ReZ_ImZ;
 
+	mpf_init(Re(Z_square));
+	mpf_init(Im(Z_square));
+	mpf_init(ReZs_ImZs);
+	mpf_init(ReZ_ImZ);
+
 	/* Lambda parameter. */
-	complex_number_t lambda=handle->lambda;
+	complex_number_t lambda;
+
+	mpf_init(Re(lambda));
+	mpf_init(Im(lambda));
+
+	mpf_set(Re(lambda),Re(handle->lambda));
+	mpf_set(Im(lambda),Im(handle->lambda));
 
 	/* The calculation begins with the a point on the complex plane. */
-	VARCOPY(Z,position);
+	VARCOPY(Z,*position);
 
 	/* Now do the iteration. */
 	for (step=0;step<handle->iteration_steps;step++)
 	{
 		/* Calculate Z_square first, as we can use a faster formula then. */
-		Re(Z_square)=Re(Z)*Re(Z);
-		Im(Z_square)=Im(Z)*Im(Z);
+		mpf_mul(Re(Z_square),Re(Z),Re(Z));
+		mpf_mul(Im(Z_square),Im(Z),Im(Z));
 
 		/* Calculate the radius from complex pane origin to Z. */
-		radius_square=Re(Z_square)+Im(Z_square);
+		mpf_add(radius_square,Re(Z_square),Im(Z_square));
 
  		/* Break the iteration if the mandelbrot bailout orbit is left. */
-		if (radius_square>bailout_square) break;
-
+		if (mpf_cmp(radius_square,bailout_square)>0) break;
+		
 		/* Two other speed up variables. */
-		ReZs_ImZs=Re(Z_square)-Im(Z_square);
-		ReZ_ImZ=Im(Z)*Re(Z);
+		mpf_sub(ReZs_ImZs,Re(Z_square),Im(Z_square));
+		mpf_mul(ReZ_ImZ,Im(Z),Re(Z));
 
 		/* Now calculate the lambda function. */
-		Re(Zn)=Re(lambda)*Re(Z)-Im(lambda)*Im(Z)+Re(lambda)*ReZs_ImZs-2*Im(lambda)*ReZ_ImZ;
-		Im(Zn)=Re(lambda)*Im(Z)+Im(lambda)*Re(Z)+Im(lambda)*ReZs_ImZs+2*Re(lambda)*ReZ_ImZ;
+		mpf_mul(help,Re(lambda),Re(Z));
+		mpf_mul(help_two,Im(lambda),Im(Z));
+		mpf_sub(help,help,help_two);
+		mpf_mul(help_two,Re(lambda),ReZs_ImZs);
+		mpf_add(help,help,help_two);
+		mpf_mul_ui(help_two,Im(lambda),2);
+		mpf_mul(help_two,help_two,ReZ_ImZ);
+		mpf_sub(Re(Zn),help,help_two);
+		
+		mpf_mul(help,Re(lambda),Im(Z));
+		mpf_mul(help_two,Im(lambda),Re(Z));
+		mpf_add(help,help,help_two);
+		mpf_mul(help_two,Im(lambda),ReZs_ImZs);
+		mpf_add(help,help,help_two);
+		mpf_mul_ui(help_two,Re(lambda),2);
+		mpf_mul(help_two,help_two,ReZ_ImZ);
+		mpf_add(Im(Zn),help,help_two);
 	
 		/* Copy Zn to Z */
 		VARCOPY(Z,Zn);
 	}
+
+	mpf_clear(bailout_square);
+	mpf_clear(radius_square);
+	mpf_clear(help);
+	mpf_clear(help_two);
+	mpf_clear(Re(Z));
+	mpf_clear(Im(Z));
+	mpf_clear(Re(Zn));
+	mpf_clear(Im(Zn));
+	mpf_clear(Re(Z_square));
+	mpf_clear(Im(Z_square));
+	mpf_clear(ReZs_ImZs);
+	mpf_clear(ReZ_ImZ);
+	mpf_clear(Re(lambda));
+	mpf_clear(Im(lambda));
 
 	return step; /* Return the iteration step in which we reached the bailout radius. */
 }

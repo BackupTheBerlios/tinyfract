@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <gmp.h>
 
 #include "../common.h"
 #include "../param_parser.h"
@@ -20,18 +21,21 @@ typedef struct
 	void*              output;
 	int                param;
 	ordinal_number_t*  points;
+	long long int      prec;
 } render_t;
 
 /* Constructor and destructor for recurse render function. */
 static render_t* constructor(
-		const complex_number_t   center,
+		const char*              center_real,
+		const char*              center_imaginary,
 		const view_dimension_t   geometry,
-		const real_number_t      scale,
+		const char               scale[],
 		const plugin_facility_t* fractal_facility,
 		const plugin_facility_t* output_facility,
 		const void*              fractal,
 		const void*              output,
-		const char               args[])
+		const char               args[],
+		long long int            prec)
 {
 	render_t*        context;
 	int              x_render;
@@ -55,10 +59,20 @@ static render_t* constructor(
 	/* Get memory for the fractal context. */
 	if (!(context=malloc(sizeof(render_t)))) return NULL;
 
+	
+	VARCOPY(context->prec,prec);
+	mpf_set_default_prec(sizeof(char)*prec);
+	
+		
 	/* Set the fractal context. */
-	VARCOPY(context->center,center);
+	mpf_init(context->center.real_part);
+	mpf_init(context->center.imaginary_part);
+	mpf_init(context->scale);
+
+	mpf_set_str(context->center.real_part,center_real,10);
+	mpf_set_str(context->center.imaginary_part,center_imaginary,10);
 	VARCOPY(context->geometry,geometry);
-	VARCOPY(context->scale,scale);
+	mpf_set_str(context->scale,scale,10);
 	VARCOPY(context->fractal_facility,fractal_facility);
 	VARCOPY(context->output_facility,output_facility);
 	VARCOPY(context->fractal,fractal);
@@ -71,6 +85,9 @@ static render_t* constructor(
 
 static void destructor(render_t* handle)
 {
+	mpf_clear(handle->center.real_part);
+	mpf_clear(handle->center.imaginary_part);
+	mpf_clear(handle->scale);
 	free(handle);
 }
 
@@ -82,6 +99,16 @@ ordinal_number_t cache_calculator(render_t* handle,const view_position_t render_
 	complex_number_t  complex_position;
 	view_position_t   shift;
 	real_number_t     scaling_factor;
+	mpf_t             help_mpf;
+	ordinal_number_t  steps;
+	mpf_t             help_two;
+
+	mpf_set_default_prec(sizeof(char)*handle->prec);
+	mpf_init(help_mpf);
+	mpf_init(Re(complex_position));
+	mpf_init(Im(complex_position));
+	mpf_init(scaling_factor);
+	mpf_init(help_two);
 
 	/* Check if the point has been calculated already. */
 	help=handle->points+render_position.y*handle->geometry.width+render_position.x;
@@ -90,18 +117,32 @@ ordinal_number_t cache_calculator(render_t* handle,const view_position_t render_
 		/* Has not been calculated till now, calculate the iteration. */
 
 		/* Precalculate scaling factor and center shift for speed reasons. */
-		scaling_factor=handle->scale/handle->geometry.width;
+		mpf_div_ui(scaling_factor,handle->scale,handle->geometry.width);
 		shift.x=handle->geometry.width/2;
 		shift.y=handle->geometry.height/2;
 
 		/* Calculate the iteration. */
-		Re(complex_position)=Re(handle->center)+scaling_factor*(render_position.x-shift.x);
-		Im(complex_position)=Im(handle->center)-scaling_factor*(render_position.y-shift.y);
-		*help=(*handle->fractal_facility->facility.fractal.calculate_function)(handle->fractal,complex_position);
+		mpf_set_si(help_two,(render_position.x-shift.x));
+		mpf_mul(help_mpf,scaling_factor,help_two);
+		mpf_add(complex_position.real_part,help_mpf,handle->center.real_part);
+
+		mpf_set_si(help_two,(render_position.y-shift.y));
+		mpf_mul(help_mpf,scaling_factor,help_two);
+		mpf_sub(Im(complex_position),Im(handle->center),help_mpf);
+
+		*help=(*handle->fractal_facility->facility.fractal.calculate_function)(handle->fractal,&complex_position);
 	}
+
+	mpf_clear(help_mpf);
+	mpf_clear(Re(complex_position));
+	mpf_clear(Im(complex_position));
+	mpf_clear(scaling_factor);
+	mpf_clear(help_two);
+	
 
 	/* Return the iteration. */
 	return(*help);
+	//return(0);
 }
 
 void fill_square(render_t* handle,const view_position_t start_point,const int square_size)
@@ -192,9 +233,14 @@ void render_recurse(render_t* handle)
 	int               square_size;
 	ordinal_number_t  *help;
 
+	#ifdef DEBUG
+	gmp_printf("R:%F.10f,I:%F.10f\n",handle->center.real_part,handle->center.imaginary_part);
+	gmp_printf("Scale:%F.10f\n",handle->scale);
+	#endif
+
 	/* Get memory for points. */
 	handle->points=malloc((sizeof(ordinal_number_t))*handle->geometry.width*handle->geometry.height);
-	
+
 	/* Calculate square_size. */
 	square_size=1<<handle->param;
 
