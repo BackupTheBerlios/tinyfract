@@ -7,28 +7,28 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: aa.so lambda.so mandelbrot.so x11.so render_dumb.so render_recurse2.so render_recurse3.so
+all: fractal_lambda.so fractal_mandelbrot.so output_aa.so output_x11.so render_dumb.so render_recurse.so
 clean:
 	$(RM) -f *.o *.so
 
-aa.o: aa.c ../plugin.h ../common.h
+fractal_lambda.o: fractal_lambda.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
-aa.so: aa.o
+fractal_lambda.so: fractal_lambda.o
+	$(LD) $(LDFLAGS) -o $@ -shared $^ 
+
+fractal_mandelbrot.o: fractal_mandelbrot.c ../plugin.h ../common.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+fractal_mandelbrot.so: fractal_mandelbrot.o
+	$(LD) $(LDFLAGS) -o $@ -shared $^ 
+
+output_aa.o: output_aa.c ../plugin.h ../common.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+output_aa.so: output_aa.o
 	$(LD) $(LDFLAGS) -o $@ -shared -laa $^ 
 
-lambda.o: lambda.c ../plugin.h ../common.h
+output_x11.o: output_x11.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
-lambda.so: lambda.o
-	$(LD) $(LDFLAGS) -o $@ -shared $^ 
-
-mandelbrot.o: mandelbrot.c ../plugin.h ../common.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-mandelbrot.so: mandelbrot.o
-	$(LD) $(LDFLAGS) -o $@ -shared $^ 
-
-x11.o: x11.c ../plugin.h ../common.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-x11.so: x11.o
+output_x11.so: output_x11.o
 	$(LD) $(LDFLAGS) -o $@ -shared -L/usr/X11R6/lib -lXt -lXaw $^ 
 
 render_dumb.o: render_dumb.c ../plugin.h ../common.h
@@ -36,13 +36,8 @@ render_dumb.o: render_dumb.c ../plugin.h ../common.h
 render_dumb.so: render_dumb.o
 	$(LD) $(LDFLAGS) -o $@ -shared $^ 
 
-render_recurse2.o: render_recurse2.c ../plugin.h ../common.h
+render_recurse.o: render_recurse.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
-render_recurse2.so: render_recurse2.o
-	$(LD) $(LDFALGS) -o $@ -shared $^
-
-render_recurse3.o: render_recurse3.c ../plugin.h ../common.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-render_recurse3.so: render_recurse3.o
+render_recurse.so: render_recurse.o
 	$(LD) $(LDFALGS) -o $@ -shared $^
 
