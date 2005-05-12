@@ -11,6 +11,7 @@
 /* Function types for the fractal facility.*/
 typedef void* (plugin_fractal_constructor_t)
 	(const ordinal_number_t iteration_steps,
+	 long long int,
 	 const char args[]);
 
 typedef void (plugin_fractal_destructor_t)
@@ -52,14 +53,16 @@ typedef void (plugin_output_put_pixel_function_t)
 
 /* Function types for the render facility */
 typedef void* (plugin_render_constructor_t) 
-	(const complex_number_t   center,
+	(const char               center_real[],
+	 const char               center_imaginary[],
 	 const view_dimension_t   geometry,
-	 const real_number_t      scale,
+	 const char               scale[],
 	 const void*              fractal_facility,
 	 const void*              output_facility,
 	 const void*              fractal,
 	 const void*              output,
-	 const char               args[]
+	 const char               args[],
+	 long long                prec
 	 );
 typedef void (plugin_render_destructor_t)
 	 (void* handle);
