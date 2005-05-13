@@ -48,15 +48,19 @@ int main(int argc, char* argv[])
 	long long int            prec=0;              /* Precision from command line or user input. */
 	
 	/* Variables and constants for option parsing. */
-	char*            center_real=NULL;
-	char*            center_imaginary=NULL;
 	char             command;
 	int              flags=0;
 	view_dimension_t geometry;
 	ordinal_number_t iteration_steps;
-	char*            scale=NULL;
+	char*            scale_str=NULL;
+	real_number_t    scale;
         char*            plugin_path=NULL;
-	char*            help;
+	char*            center_str=NULL;
+	complex_number_t center;
+	view_position_t  new_center_real;
+	complex_number_t new_center_virtual;
+	float            scale_factor=10;
+	real_number_t    help;
 	
 	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
@@ -79,6 +83,7 @@ int main(int argc, char* argv[])
 		{"render-method=",      1,0,'r'},
 		{"render-parameters=",  1,0,'R'},
 		{"precision=",          1,0,'p'},
+		{"scale-factor",        1,0,'S'},
 //		{"scale=",              1,0,'s'},
 		{"help",                0,0,'?'},
 		{"version",             0,0,'V'},
@@ -89,8 +94,8 @@ int main(int argc, char* argv[])
 	/* Parse options. */
 	for (;;)
 	{
-//		c=getopt_long(argc,argv,"c:f:F:g:i:o:O:P:r:R:s:",long_options,&option_index);
-		c=getopt_long(argc,argv,"f:F:g:o:O:P:r:R:p:",long_options,&option_index);
+//		c=getopt_long(argc,argv,"c:f:F:g:i:o:O:P:r:R:p:s:S:",long_options,&option_index);
+		c=getopt_long(argc,argv,"f:F:g:o:O:P:r:R:p:S:",long_options,&option_index);
 		if (c==-1) break;
 
 		switch (c)
@@ -101,8 +106,6 @@ int main(int argc, char* argv[])
 				break;*/
 			case 'p':
 				sscanf(optarg,"%lld", &prec);
-//				prec=100;
-				fprintf(stderr,"Hallo\n");
 				break;
 			case 'f':
 				fractal_type=optarg;
@@ -137,6 +140,9 @@ int main(int argc, char* argv[])
 				sscanf(optarg,"%lf",&scale);
 				flags|=SCALE_SET;
 				break;*/
+			case 'S':
+				sscanf(optarg,"%f", &scale_factor);
+				break;
 			case 'V':
 				fprintf(stderr,
 					"%s: Version %s-%s, build by %s at %s on %s\n"
@@ -172,6 +178,7 @@ int main(int argc, char* argv[])
 					"  -R, --render-parameters=  Specifies additional parameters passed to the render\n"
 					"                              function.\n"
 //					"  -s, --scale=              Scale: Baseline with of the rendered picture in the complex\n"
+					"  -S  --scale-factor=       Set the zomming factor for auto zoom. Default value is 10.\n"
 					"                              coordinate system. Defaults to fractal function's choice.\n"
 					"  -p, --precision=          Set the number of Nachkommastellen.\n"
 					"      --help                Show this help and exit.\n"
@@ -293,12 +300,8 @@ int main(int argc, char* argv[])
 					fprintf(stderr,"%s: You have to specify a precision greater than zero!\n", argv[0]);
 					exit(EXIT_FAILURE);
 				}
-				help=malloc(sizeof(char)*(prec*2+2));
-				center_real=malloc(sizeof(char)*(prec+1));
-				center_imaginary=malloc(sizeof(char)*(prec+1));
-				scanf("%s", help);
-				center_real=strtok(help,",");
-				center_imaginary=strtok(NULL,",");
+				center_str=malloc(sizeof(char)*(prec*2+2));
+				scanf("%s", center_str);
 				flags|=CENTER_SET;
 				break;
 			case 's':
@@ -307,60 +310,81 @@ int main(int argc, char* argv[])
 					fprintf(stderr,"%s: You have to specify a precision greater than zero!\n", argv[0]);
 					exit(EXIT_FAILURE);
 				}
-				scale=malloc(sizeof(char)*(prec+1));
-				scanf("%s",scale);
+				scale_str=malloc(sizeof(char)*(prec+1));
+				scanf("%s",scale_str);
 				flags|=SCALE_SET;
 				break;
 			case 'i':
 				scanf("%u",&iteration_steps);
 				break;
 			case 'r':
-				printf("position: %s,%s\n",center_real,center_imaginary);
-				printf("scale: %s\n",scale);
+				printf("position: %s\n",center_str);
+				printf("scale: %s\n",scale_str);
 				printf("iteration_steps: %u\n",iteration_steps);
 
-				
-	/* Initialize the render facility. */
-	#ifdef DEBUG
-	fprintf(stderr,"Initializing render facility.\n");
-	#endif
-	if (!(render=(*render_facility->facility.render.constructor)
-		(center_real,center_imaginary,
-//		(fractal_facility->facility.fractal.center,
-		 geometry,
-		 scale,
-//		 fractal_facility->facility.fractal.scale,
-		 fractal_facility,output_facility,fractal,output,render_args,100)))
+	/* Parse options. */
+	mpf_set_default_prec(sizeof(char)*prec);
+
+	mpf_init(Re(center));
+	mpf_init(Im(center));
+	mpf_init(scale);
+	mpf_init(Re(new_center_virtual));
+	mpf_init(Im(new_center_virtual));
+	mpf_init(help);
+
+	parse_options(&center,center_str,&scale,scale_str,prec);
+
+	for(;;)
 	{
-		perror("could not initialize render facility");
-		exit(EXIT_FAILURE);
-	}
+		/* Initialize the render facility. */
+		#ifdef DEBUG
+		fprintf(stderr,"Initializing render facility.\n");
+		#endif
+		if (!(render=(*render_facility->facility.render.constructor)
+			(center,
+//			(fractal_facility->facility.fractal.center,
+			 geometry,
+			 scale,
+//			 fractal_facility->facility.fractal.scale,
+			 fractal_facility,output_facility,fractal,output,render_args,100)))
+		{
+			perror("Could not initialize render facility");
+			exit(EXIT_FAILURE);
+		}
 
-	/* Render the fractal. */
-	#ifdef DEBUG
-	fprintf(stderr,"Rendering the fractal.\n");
-	#endif
-	(*render_facility->facility.render.render_function)(render);
-	
-	/* Flush and close the output viewport. */
-	#ifdef DEBUG
-	fprintf(stderr,"Flushing viewport.\n");
-	#endif
-	(*output_facility->facility.output.flush_viewport_function)(output);
+		/* Render the fractal. */
+		#ifdef DEBUG
+		fprintf(stderr,"Rendering the fractal.\n");
+		#endif
+		(*render_facility->facility.render.render_function)(render);
 
-	/* Sleep a while. */
-	#ifdef DEBUG
-	fprintf(stderr,"Waiting.\n");
-	#endif
+		/* Infoem the user about watching the fractal. */
+		fprintf(stderr,"%s: Ready with rendering. You can look at the fractal know.\n", argv[0]);
 
-	/* Free the render facility used. */
-	#ifdef DEBUG
-	fprintf(stderr,"Closing render facility.\n");
-	#endif
-	(*render_facility->facility.render.destructor)(render);
+		/* Flush and close the output viewport. */
+		#ifdef DEBUG
+		fprintf(stderr,"Flushing viewport.\n");
+		#endif
+		(*output_facility->facility.output.flush_viewport_function)(output,&new_center_real);
 
+		/* Calculate new centre. */
+		make_vinumber(&new_center_virtual,new_center_real,geometry,scale,center,prec);
+		VARCOPY(Re(center),Re(new_center_virtual));
+		VARCOPY(Im(center),Im(new_center_virtual));
+		mpf_set_d(help,scale_factor);
+		mpf_div(scale,scale,help);
 
-				
+		/* Sleep a while. */
+		#ifdef DEBUG
+		fprintf(stderr,"Waiting.\n");
+		#endif
+
+		/* Free the render facility used. */
+		#ifdef DEBUG
+		fprintf(stderr,"Closing render facility.\n");
+		#endif
+		(*render_facility->facility.render.destructor)(render);
+	}			
 				
 				break;
 			case '\n':
@@ -384,6 +408,14 @@ int main(int argc, char* argv[])
 	#endif
 	(*fractal_facility->facility.fractal.destructor)(fractal);
 
+	/* Free the multiple precision variables. */
+	free(Re(center));
+	free(Im(center));
+	free(scale);
+	free(help);
+	free(Re(new_center_virtual));
+	free(Im(new_center_virtual));
+	
 	/* That was it. Bye! */
 	exit(EXIT_SUCCESS);
 	return 0;

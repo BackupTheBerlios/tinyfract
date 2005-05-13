@@ -20,10 +20,10 @@ main.o: main.c common.h plugin.h plugin_loader.h
 plugin_loader.o: plugin_loader.c common.h plugin.h plugin_loader.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-#param_parser.o: param_parser.c common.h param_parser.h
-#	$(CC) $(CFLAGS) -c -o $@ $<
+param_parser.o: param_parser.c common.h param_parser.h
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-tinyfract: main.o plugin_loader.o
+tinyfract: main.o plugin_loader.o param_parser.o
 	$(LD) $(LDFLAGS) -lgmp -ldl -o $@ $^ 
 
 existenv: existenv.c

@@ -1,14 +1,14 @@
 .PHONY: all clean
 
-CC=gcc-3.0
+CC=gcc
 CFLAGS=-O3 -fPIC -DDEBUG
-LD=gcc-3.0
+LD=gcc
 LDFLAGS=
 RM=/bin/rm
 
 
 #all: aa.so lambda.so mandelbrot.so x11.so render_dumb.so render_recurse.so
-all: fractal_mandelbrot.so output_x11.so render_recurse.so render_dumb.so fractal_lambda.so fractal_flussbett.so
+all: fractal_mandelbrot.so output_x11.so render_recurse.so render_dumb.so fractal_lambda.so
 
 clean:
 	$(RM) -f *.o *.so

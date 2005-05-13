@@ -43,7 +43,8 @@ typedef void (plugin_output_fill_rect_function_t)
 	 const pixel_value value);
 
 typedef void (plugin_output_flush_viewport_function_t)
-	(void* handle);
+	(void* handle,
+	 view_position_t* position);
 
 typedef void (plugin_output_put_pixel_function_t)
 	(void* handle,
@@ -53,10 +54,9 @@ typedef void (plugin_output_put_pixel_function_t)
 
 /* Function types for the render facility */
 typedef void* (plugin_render_constructor_t) 
-	(const char               center_real[],
-	 const char               center_imaginary[],
+	(const complex_number_t   center,
 	 const view_dimension_t   geometry,
-	 const char               scale[],
+	 const real_number_t      scale,
 	 const void*              fractal_facility,
 	 const void*              output_facility,
 	 const void*              fractal,

@@ -1,3 +1,4 @@
+#include <gmp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,4 +33,63 @@ int parse_real_number_list(const char args[], real_number_t* argv[])
 	*argv=argv_p;
 	return argc;
 }
+
+int parse_options(complex_number_t* center,char* center_source,real_number_t* scale,char* scale_source,long long int prec)
+{
+	char* help1;
+	char* help2;
+
+	help1=malloc(sizeof(char)*(prec+1));
+	help2=malloc(sizeof(char)*(prec+1));
+
+	/* Parse center. */
+	help1=strtok(center_source,",");
+	help2=strtok(NULL,",");
+
+	mpf_set_str(center->real_part,help1,10);
+	mpf_set_str(center->imaginary_part,help2,10);
+
+	/* Parse scale. */
+	mpf_set_str(*scale,scale_source,10);
+
+	return 0;
+}
+
+int make_vinumber(complex_number_t* virtual_position,view_position_t real_position,view_dimension_t geometry,real_number_t scale,complex_number_t center,long long int prec)
+{
+	real_number_t   scaling_factor;
+	view_position_t shift;
+	real_number_t   help_two;
+	real_number_t   help_one;
+
+	/* Initialize multiple precision variables. */
+	mpf_set_default_prec(sizeof(char)*prec);
+
+	mpf_init(scaling_factor);
+	mpf_init(help_two);
+	mpf_init(help_one);
+
+	/* Precalculate scaling factor and center shift for speed reasons. */
+	mpf_div_ui(scaling_factor,scale,geometry.width);
+	shift.x=geometry.width/2;
+	shift.y=geometry.height/2;
+
+	/* Calculate the virtual number. */
+	mpf_set_si(help_two,(real_position.x-shift.x));
+	mpf_mul(help_one,scaling_factor,help_two);
+	mpf_add(virtual_position->real_part,help_one,Re(center));
+
+	mpf_set_si(help_two,(real_position.y-shift.y));
+	mpf_mul(help_one,scaling_factor,help_two);
+	mpf_sub(virtual_position->imaginary_part,Im(center),help_one);
+
+	/* Free multiple precision variables. */
+//	free(scaling_factor);
+//	free(help_one);
+//	free(help_two);
+
+	return 0;
+}
+
+
 

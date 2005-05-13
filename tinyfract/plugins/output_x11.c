@@ -197,7 +197,7 @@ void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_va
 }
 
 /* Flush X11 viewport */
-void flush_viewport_x11(x11_t* handle)
+void flush_viewport_x11(x11_t* handle, view_position_t* position)
 {
 	XEvent event;
 	XWindowAttributes attributes;
@@ -221,6 +221,8 @@ void flush_viewport_x11(x11_t* handle)
 		{
 			case ButtonPress:
 				fprintf(stderr,"Button Pressed\n");
+				position->x=event.xbutton.x;
+				position->y=event.xbutton.y;
 				printf("c%d,%d\n",event.xbutton.x,event.xbutton.y);
 				goto exit_func;
 			case MapNotify:
