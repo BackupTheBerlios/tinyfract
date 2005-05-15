@@ -124,6 +124,8 @@ void render_dumb(render_t* handle)
 	mpf_clear(Re(complex_position));
 	mpf_clear(Im(complex_position));
 	mpf_clear(scaling_factor);
+	mpf_clear(help);
+	mpf_clear(help_two);
 }
 
 /* Enumerate plugin facilities. */

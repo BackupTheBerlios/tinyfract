@@ -8,6 +8,7 @@
 
 #include <getopt.h>
 #include <gmp.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,6 +67,9 @@ int main(int argc, char* argv[])
 	const int GEOMETRY_SET=2;
 	const int ITERATION_STEPS_SET=4;
 	const int SCALE_SET=8;
+
+	geometry.width=0;
+	geometry.height=0;
 
 	
 	int c;
@@ -235,6 +239,13 @@ int main(int argc, char* argv[])
 			fprintf(stderr,"%s: You have to specify a render method.\n",argv[0]);
 			exit(EXIT_FAILURE);
 		}
+	}
+
+	/* Test if geometry was given. */
+	if(geometry.width==0 || geometry.height==0)
+	{
+		fprintf(stderr,"%s: You have to specify a geometry.\n", argv[0]);
+		exit(EXIT_FAILURE);
 	}
 
 	/* Load fractal facility. */
@@ -409,12 +420,12 @@ int main(int argc, char* argv[])
 	(*fractal_facility->facility.fractal.destructor)(fractal);
 
 	/* Free the multiple precision variables. */
-	free(Re(center));
-	free(Im(center));
-	free(scale);
-	free(help);
-	free(Re(new_center_virtual));
-	free(Im(new_center_virtual));
+	mpf_clear(Re(center));
+	mpf_clear(Im(center));
+	mpf_clear(scale);
+	mpf_clear(help);
+	mpf_clear(Re(new_center_virtual));
+	mpf_clear(Im(new_center_virtual));
 	
 	/* That was it. Bye! */
 	exit(EXIT_SUCCESS);

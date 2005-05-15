@@ -4,6 +4,7 @@
 #include <string.h>
 #include "common.h"
 
+#if 0
 int parse_real_number_list(const char args[], real_number_t* argv[])
 {
 	int            argc;
@@ -33,16 +34,18 @@ int parse_real_number_list(const char args[], real_number_t* argv[])
 	*argv=argv_p;
 	return argc;
 }
+#endif
 
 int parse_options(complex_number_t* center,char* center_source,real_number_t* scale,char* scale_source,long long int prec)
 {
 	char* help1;
 	char* help2;
 
-	help1=malloc(sizeof(char)*(prec+1));
-	help2=malloc(sizeof(char)*(prec+1));
+	//help1=malloc(sizeof(char)*(prec+1));
+	//help2=malloc(sizeof(char)*(prec+1));
 
 	/* Parse center. */
+	//fprintf(stderr,"Hallo: help1: %p help2: %p\n",help1,help2);
 	help1=strtok(center_source,",");
 	help2=strtok(NULL,",");
 
@@ -51,6 +54,11 @@ int parse_options(complex_number_t* center,char* center_source,real_number_t* sc
 
 	/* Parse scale. */
 	mpf_set_str(*scale,scale_source,10);
+
+	/* Free helpers. */
+	fprintf(stderr,"Hallo: help1: %p help2: %p\n",help1,help2);
+	free(help1);
+	free(help2);
 
 	return 0;
 }
@@ -84,9 +92,9 @@ int make_vinumber(complex_number_t* virtual_position,view_position_t real_positi
 	mpf_sub(virtual_position->imaginary_part,Im(center),help_one);
 
 	/* Free multiple precision variables. */
-//	free(scaling_factor);
-//	free(help_one);
-//	free(help_two);
+	mpf_clear(scaling_factor);
+	mpf_clear(help_one);
+	mpf_clear(help_two);
 
 	return 0;
 }

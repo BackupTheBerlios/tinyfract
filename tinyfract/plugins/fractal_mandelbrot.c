@@ -159,6 +159,18 @@ static ordinal_number_t calculate_julia(julia_t* handle, const complex_number_t*
 		mpf_set(Re(Z),Z_helper);
 	}
 
+	/* Free multiple precision variables. */
+	mpf_clear(bailout_square);
+	mpf_clear(radius_square);
+	mpf_clear(help);
+	mpf_clear(Re(Z));
+	mpf_clear(Im(Z));
+	mpf_clear(Z_helper);
+	mpf_clear(Re(Z_square));
+	mpf_clear(Im(Z_square));
+	mpf_clear(Re(C));
+	mpf_clear(Im(C));
+
 	return step; /* Return the iteration step in which we reached the bailout radius. */
 }
 

@@ -71,7 +71,8 @@ static void destructor_lambda(lambda_t* handle)
 static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_t* position)
 {
 	mpf_set_default_prec(sizeof(char)*handle->prec);
-	
+
+
 	/* Lambda fractal constants. */
 	real_number_t bailout_square;
 
@@ -161,6 +162,7 @@ static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_
 		VARCOPY(Z,Zn);
 	}
 
+	/* Clear multiple precision Variables. */
 	mpf_clear(bailout_square);
 	mpf_clear(radius_square);
 	mpf_clear(help);

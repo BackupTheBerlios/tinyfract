@@ -8,7 +8,7 @@ RM=/bin/rm
 
 
 #all: aa.so lambda.so mandelbrot.so x11.so render_dumb.so render_recurse.so
-all: fractal_mandelbrot.so output_x11.so render_recurse.so render_dumb.so fractal_lambda.so
+all: fractal_mandelbrot.so output_x11.so render_recurse.so render_dumb.so fractal_lambda.so fractal_fcn.so
 
 clean:
 	$(RM) -f *.o *.so
@@ -32,9 +32,9 @@ fractal_mandelbrot.o: fractal_mandelbrot.c ../plugin.h ../common.h
 fractal_mandelbrot.so: fractal_mandelbrot.o
 	$(LD) $(LDFLAGS) -o $@ -lgmp -shared $^ 
 
-fractal_flussbett.o: fractal_flussbett.c ../plugin.h ../common.h ../trgnme.h
+fractal_fcn.o: fractal_fcn.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
-fractal_flussbett.so: fractal_flussbett.o
+fractal_fcn.so: fractal_fcn.o
 	$(LD) $(LDFLAGS) -o $@ -lgmp -shared $^ 
 
 
