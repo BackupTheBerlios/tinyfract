@@ -11,7 +11,7 @@
 /* Function types for the fractal facility.*/
 typedef void* (plugin_fractal_constructor_t)
 	(const ordinal_number_t iteration_steps,
-	 long long int,
+	 long long int prec,
 	 const char args[]);
 
 typedef void (plugin_fractal_destructor_t)
@@ -44,7 +44,7 @@ typedef void (plugin_output_fill_rect_function_t)
 
 typedef void (plugin_output_flush_viewport_function_t)
 	(void* handle,
-	 view_position_t* position);
+	 button_event_t* position);
 
 typedef void (plugin_output_put_pixel_function_t)
 	(void* handle,

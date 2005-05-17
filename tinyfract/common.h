@@ -42,6 +42,13 @@ typedef struct
 
 typedef unsigned int pixel_value;
 
+typedef struct
+{
+	unsigned int x;
+	unsigned int y;
+	unsigned int type;
+} button_event_t;
+
 /*typedef struct
 {
 	unsigned int hue;

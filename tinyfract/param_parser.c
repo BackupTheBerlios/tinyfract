@@ -41,11 +41,7 @@ int parse_options(complex_number_t* center,char* center_source,real_number_t* sc
 	char* help1;
 	char* help2;
 
-	//help1=malloc(sizeof(char)*(prec+1));
-	//help2=malloc(sizeof(char)*(prec+1));
-
 	/* Parse center. */
-	//fprintf(stderr,"Hallo: help1: %p help2: %p\n",help1,help2);
 	help1=strtok(center_source,",");
 	help2=strtok(NULL,",");
 
@@ -56,9 +52,8 @@ int parse_options(complex_number_t* center,char* center_source,real_number_t* sc
 	mpf_set_str(*scale,scale_source,10);
 
 	/* Free helpers. */
-	fprintf(stderr,"Hallo: help1: %p help2: %p\n",help1,help2);
 	free(help1);
-	free(help2);
+	//free(help2);
 
 	return 0;
 }

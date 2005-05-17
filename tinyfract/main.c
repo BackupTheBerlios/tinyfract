@@ -58,10 +58,11 @@ int main(int argc, char* argv[])
         char*            plugin_path=NULL;
 	char*            center_str=NULL;
 	complex_number_t center;
-	view_position_t  new_center_real;
+	button_event_t   new_center_real;
 	complex_number_t new_center_virtual;
-	float            scale_factor=10;
-	real_number_t    help;
+	double           zoom_factor=10;
+	view_position_t  help;
+	real_number_t    convert;
 	
 	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
@@ -145,7 +146,7 @@ int main(int argc, char* argv[])
 				flags|=SCALE_SET;
 				break;*/
 			case 'S':
-				sscanf(optarg,"%f", &scale_factor);
+				sscanf(optarg,"%lf", &zoom_factor);
 				break;
 			case 'V':
 				fprintf(stderr,
@@ -201,6 +202,7 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"\tgeometry=%dx%d\n",geometry.width,geometry.height);
 	fprintf(stderr,"\titeration-steps=%d\n",iteration_steps);
 	fprintf(stderr,"\toutput-method=%s\n",output_method);
+	fprintf(stderr,"\tprecision=%lld\n",prec);
 //	fprintf(stderr,"\tscale=%lf\n",scale);
 #endif
 
@@ -341,12 +343,16 @@ int main(int argc, char* argv[])
 	mpf_init(scale);
 	mpf_init(Re(new_center_virtual));
 	mpf_init(Im(new_center_virtual));
-	mpf_init(help);
+	mpf_init(convert);
 
 	parse_options(&center,center_str,&scale,scale_str,prec);
 
 	for(;;)
 	{
+		gmp_printf("position: %F.10f %F.10f\n",Re(center),Im(center));
+		gmp_printf("scale: %F.10f\n",scale);
+		printf("iteration_steps: %u\n",iteration_steps);
+		
 		/* Initialize the render facility. */
 		#ifdef DEBUG
 		fprintf(stderr,"Initializing render facility.\n");
@@ -379,11 +385,48 @@ int main(int argc, char* argv[])
 		(*output_facility->facility.output.flush_viewport_function)(output,&new_center_real);
 
 		/* Calculate new centre. */
-		make_vinumber(&new_center_virtual,new_center_real,geometry,scale,center,prec);
-		VARCOPY(Re(center),Re(new_center_virtual));
-		VARCOPY(Im(center),Im(new_center_virtual));
-		mpf_set_d(help,scale_factor);
-		mpf_div(scale,scale,help);
+		#ifdef DEBUG
+		fprintf(stderr,"%s: Pressed Button is: %d.\n", argv[0], new_center_real.type);
+		#endif
+		switch (new_center_real.type)
+		{
+			case 1:
+				help.x=new_center_real.x;
+				help.y=new_center_real.y;
+				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
+				VARCOPY(Re(center),Re(new_center_virtual));
+				VARCOPY(Im(center),Im(new_center_virtual));
+				mpf_set_d(convert,zoom_factor);
+				mpf_div(scale,scale,convert);
+				break;
+			case 4:
+				help.x=new_center_real.x;
+				help.y=new_center_real.y;
+				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
+				VARCOPY(Re(center),Re(new_center_virtual));
+				VARCOPY(Im(center),Im(new_center_virtual));
+				break;
+			case 3:
+				help.x=new_center_real.x;
+				help.y=new_center_real.y;
+				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
+				VARCOPY(Re(center),Re(new_center_virtual));
+				VARCOPY(Im(center),Im(new_center_virtual));
+				mpf_set_d(convert,zoom_factor);
+				mpf_mul(scale,scale,convert);
+				break;
+			case 5:
+				help.x=new_center_real.x;
+				help.y=new_center_real.y;
+				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
+				VARCOPY(Re(center),Re(new_center_virtual));
+				VARCOPY(Im(center),Im(new_center_virtual));
+				break;
+			case 2:
+				goto exit_func;
+			default:
+				break;
+		}
 
 		/* Sleep a while. */
 		#ifdef DEBUG
@@ -406,6 +449,7 @@ int main(int argc, char* argv[])
 	}
 /* Hier ist das Ende der Hauptschleife. */
 
+exit_func:
 	
 	/* Free the output facility used. */
 	#ifdef DEBUG
@@ -423,9 +467,9 @@ int main(int argc, char* argv[])
 	mpf_clear(Re(center));
 	mpf_clear(Im(center));
 	mpf_clear(scale);
-	mpf_clear(help);
 	mpf_clear(Re(new_center_virtual));
 	mpf_clear(Im(new_center_virtual));
+	mpf_clear(convert);
 	
 	/* That was it. Bye! */
 	exit(EXIT_SUCCESS);

@@ -16,20 +16,16 @@ typedef struct
 } julia_t;
 
 /* Constructor and destructor for Julia fractal. */
-static julia_t* constructor_julia(const ordinal_number_t iteration_steps, const char args[], long long int prec)
+static julia_t* constructor_julia(const ordinal_number_t iteration_steps, long long int prec, const char args[])
 {
 	julia_t* context;
-	char*    help;
-	char*    real_part;
-	char*    imaginary_part;
+	char*    real_param;
+	char*    imaginary_param;
+	char*    args_help;
 
-	help=malloc(sizeof(char)*(prec*2+2));
-	imaginary_part=malloc(sizeof(char)*prec+1);
-	real_part=malloc(sizeof(char)*prec+1);
-
+	/* Set the default precision. */
 	mpf_set_default_prec(sizeof(char)*prec);
-	
-	
+
 	/* Get memory for the fractal context. */
 	if (!(context=malloc(sizeof(julia_t)))) return NULL;
 	mpf_init(Im(context->C));
@@ -37,35 +33,41 @@ static julia_t* constructor_julia(const ordinal_number_t iteration_steps, const 
 
 	/* Set the fractal context. */
 	context->iteration_steps=iteration_steps;
-	
-	#if 0
-	if (args)
+
+	if(args!=NULL)
 	{
 		if (strchr(args, ',')==NULL)
 		{
-			sscanf(args,"%s", &help);
-			mpf_set_str(Re(context->C),help,10);
+			real_param=malloc(sizeof(char)*(prec+1));
+			sscanf(args,"%s",real_param);
+			mpf_set_str(Re(context->C),real_param,10);
 			mpf_set_str(Im(context->C),"1",10);
+			free(real_param);
 		}
 		else
 		{
-			sscanf(args,"%s",help);
-			real_part=strtok(help,",");
-			imaginary_part=strtok(NULL,"\0");
+			args_help=malloc(sizeof(args));
+			strcpy(args_help,args);
+			real_param=strtok(args_help,",");
+			imaginary_param=strtok(NULL,"\0");
 
-			mpf_set_str(Re(context->C),real_part,10);
-			mpf_set_str(Im(context->C),imaginary_part,10);
+			mpf_set_str(Re(context->C),real_param,10);
+			mpf_set_str(Im(context->C),imaginary_param,10);
+			free(real_param);
+			free(imaginary_param);
+			free(args_help);
 		}
 	}
 	else
 	{
-		mpf_set_str(Re(context->C),"0",10);
-		mpf_set_str(Im(context->C),"1",10);
+		mpf_set_si(Re(context->C),0);
+		mpf_set_si(Im(context->C),1);
 	}
-	#endif
 
+	#if 0
 	mpf_set_str(Re(context->C),"0",10);
 	mpf_set_str(Im(context->C),"1",10);
+	#endif
 
 	context->prec=prec;
 	#ifdef DEBUG 
@@ -92,12 +94,12 @@ static ordinal_number_t calculate_julia(julia_t* handle, const complex_number_t*
 	real_number_t bailout_square;
 
 	mpf_init(bailout_square);
-	mpf_set_str(bailout_square,"4",10);
+	mpf_set_si(bailout_square,4);
 
 	/* Three helper variables. */
 	real_number_t    radius_square;
 	ordinal_number_t step;
-	mpf_t            help;
+	real_number_t    help;
 
 	mpf_init(radius_square);
 	mpf_init(help);
@@ -133,7 +135,8 @@ static ordinal_number_t calculate_julia(julia_t* handle, const complex_number_t*
 
 	
 	/* The calculation begins with the a point on the complex plane. */
-	VARCOPY(Z,*position);
+	mpf_set(Re(Z),position->real_part);
+	mpf_set(Im(Z),position->imaginary_part);
 
 	/* Now do the iteration. */
 	for (step=0;step<handle->iteration_steps;step++)

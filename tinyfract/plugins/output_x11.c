@@ -191,13 +191,13 @@ void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_va
 {
 	/* Set color for next operation. */
 	XSetForeground(handle->dpy,handle->gcpx,handle->colors[value].pixel);
-	
+
 	/* Put a pixel into the double buffer. */
 	XDrawPoint(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y);
 }
 
 /* Flush X11 viewport */
-void flush_viewport_x11(x11_t* handle, view_position_t* position)
+void flush_viewport_x11(x11_t* handle, button_event_t* position)
 {
 	XEvent event;
 	XWindowAttributes attributes;
@@ -216,14 +216,19 @@ void flush_viewport_x11(x11_t* handle, view_position_t* position)
 	{
 		/* Wait for an event. */
 		XWindowEvent(handle->dpy,handle->win,0xffffff,&event);
+		#ifdef DEBUG
 		fprintf(stderr,"Event: %d\n",event.type);
+		#endif
 		switch (event.type)
 		{
 			case ButtonPress:
-				fprintf(stderr,"Button Pressed\n");
 				position->x=event.xbutton.x;
 				position->y=event.xbutton.y;
-				printf("c%d,%d\n",event.xbutton.x,event.xbutton.y);
+				position->type=event.xbutton.button;
+				#ifdef DEBUG
+				fprintf(stderr,"c%d,%d\n",event.xbutton.x,event.xbutton.y);
+				fprintf(stderr,"Button Pressed: %d\n", event.xbutton.button);
+				#endif
 				goto exit_func;
 			case MapNotify:
 			case PropertyNotify:
