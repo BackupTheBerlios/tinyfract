@@ -26,10 +26,9 @@ typedef struct
 
 /* Constructor and destructor for recurse render function. */
 static render_t* constructor(
-		const char*              center_real,
-		const char*              center_imaginary,
+		const complex_number_t   center,
 		const view_dimension_t   geometry,
-		const char               scale[],
+		const real_number_t      scale,
 		const plugin_facility_t* fractal_facility,
 		const plugin_facility_t* output_facility,
 		const void*              fractal,
@@ -69,10 +68,10 @@ static render_t* constructor(
 	mpf_init(context->center.imaginary_part);
 	mpf_init(context->scale);
 
-	mpf_set_str(context->center.real_part,center_real,10);
-	mpf_set_str(context->center.imaginary_part,center_imaginary,10);
+	mpf_set(context->center.real_part,Re(center));
+	mpf_set(context->center.imaginary_part,Im(center));
 	VARCOPY(context->geometry,geometry);
-	mpf_set_str(context->scale,scale,10);
+	mpf_set(context->scale,scale);
 	VARCOPY(context->fractal_facility,fractal_facility);
 	VARCOPY(context->output_facility,output_facility);
 	VARCOPY(context->fractal,fractal);
@@ -231,6 +230,7 @@ void render_recurse(render_t* handle)
 	int               x_count;
 	int               y_count;
 	int               square_size;
+	float		  prozent;
 	ordinal_number_t  *help;
 
 	#ifdef DEBUG
@@ -260,7 +260,10 @@ void render_recurse(render_t* handle)
 			/* Execute the fill square function. */
 			fill_square(handle,start_point,square_size);
 		}
+		prozent=(100*x_count)/(x_square-1);
+		printf("%d%\n",prozent);
 	}
+	printf("Finished");
 }
 
 /* Enumerate plugin facilities. */

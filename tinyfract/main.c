@@ -69,10 +69,6 @@ int main(int argc, char* argv[])
 	const int ITERATION_STEPS_SET=4;
 	const int SCALE_SET=8;
 
-	geometry.width=0;
-	geometry.height=0;
-
-	
 	int c;
 	int option_index=0;
 	static struct option long_options[] =
@@ -95,6 +91,9 @@ int main(int argc, char* argv[])
 		{0,0,0,0}
 	};
 
+
+	geometry.width=0;
+	geometry.height=0;
 
 	/* Parse options. */
 	for (;;)

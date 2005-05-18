@@ -1,8 +1,8 @@
 .PHONY: all clean
 
-CC=gcc
+CC=gcc-3.0
 CFLAGS=-Wall -O2 -DDEBUG
-LD=gcc
+LD=gcc-3.0
 LDFLAGS=
 MAKE=make
 RM=/bin/rm

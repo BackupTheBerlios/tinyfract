@@ -88,22 +88,15 @@ static void destructor_julia(julia_t* handle)
 /* Julia formula: z(0)=p, c=const., z(n+1)=z(n)^2+c */
 static ordinal_number_t calculate_julia(julia_t* handle, const complex_number_t* position)
 {
-	mpf_set_default_prec(sizeof(char)*handle->prec);
-
 	/* Julia fractal constants. */
 	real_number_t bailout_square;
 
-	mpf_init(bailout_square);
-	mpf_set_si(bailout_square,4);
-
+	
 	/* Three helper variables. */
 	real_number_t    radius_square;
 	ordinal_number_t step;
 	real_number_t    help;
-
-	mpf_init(radius_square);
-	mpf_init(help);
-
+	
 	/*
 	 * Z stores the complex number during the iterations, Z_helper is a buffer
 	 * for the new real part, because the old is required to calculate the new
@@ -111,29 +104,37 @@ static ordinal_number_t calculate_julia(julia_t* handle, const complex_number_t*
 	 */
 	complex_number_t Z;
 	real_number_t    Z_helper;
-
-	mpf_init(Re(Z));
-	mpf_init(Im(Z));
-	mpf_init(Z_helper);
 	
 	/* This ones accelerate the calculation. */
 	complex_number_t Z_square;
-
-	mpf_init(Re(Z_square));
-	mpf_init(Im(Z_square));
 
 	/*
 	 * Julia fractals need this parameter to be set to a fixed number.
 	 */
 	complex_number_t C=handle->C;
 
+	/* Init multiple precision vars. */
+	mpf_set_default_prec(sizeof(char)*handle->prec);
+	
+	mpf_init(bailout_square);
+	mpf_set_si(bailout_square,4);
+
+	mpf_init(radius_square);
+	mpf_init(help);
+
+	mpf_init(Re(Z));
+	mpf_init(Im(Z));
+	mpf_init(Z_helper);
+
+	mpf_init(Re(Z_square));
+	mpf_init(Im(Z_square));
+	
 	mpf_init(Re(C));
 	mpf_init(Im(C));
 
 	mpf_set(Re(C),handle->C.real_part);
 	mpf_set(Im(C),handle->C.imaginary_part);
 
-	
 	/* The calculation begins with the a point on the complex plane. */
 	mpf_set(Re(Z),position->real_part);
 	mpf_set(Im(Z),position->imaginary_part);
@@ -209,22 +210,15 @@ static void destructor_mandelbrot(mandelbrot_t* handle)
 /* Mandelbrot formula: z(0)=p, z(n+1)=z(n)^2+p */
 static ordinal_number_t calculate_mandelbrot(mandelbrot_t* handle, const complex_number_t* position)
 {
-	/* Set default precision. */
-	mpf_set_default_prec(sizeof(char)*handle->prec);
-	
+		
 	/* Mandelbrot fractal constants. */
 	real_number_t bailout_square;
 	
-	mpf_init(bailout_square);
-	mpf_set_str(bailout_square,"4",10);
-	
+
 	/* Three helper variables. */
 	real_number_t    radius_square;
 	ordinal_number_t step;
-	mpf_t            help;
-
-	mpf_init(help);
-	mpf_init(radius_square);
+	real_number_t    help;
 
 	/*
 	 * Z stores the complex number during the iterations, Z_helper is a buffer
@@ -233,17 +227,26 @@ static ordinal_number_t calculate_mandelbrot(mandelbrot_t* handle, const complex
 	 */
 	complex_number_t Z;
 	real_number_t    Z_helper;
+
+	/* This ones accelerate the calculation. */
+	complex_number_t Z_square;
+
+	/* Init multiple precision vars. */
+	mpf_set_default_prec(sizeof(char)*handle->prec);
+
+	mpf_init(bailout_square);
+	mpf_set_str(bailout_square,"4",10);
 	
+	mpf_init(help);
+	mpf_init(radius_square);
+
 	mpf_init(Re(Z));
 	mpf_init(Im(Z));
 	mpf_init(Z_helper);
 	
-	/* This ones accelerate the calculation. */
-	complex_number_t Z_square;
-
 	mpf_init(Re(Z_square));
 	mpf_init(Im(Z_square));
-
+	
 	/* The calculation begins with the a point on the complex plane. */
 	mpf_set(Re(Z),Re(*position));
 	mpf_set(Im(Z),Im(*position));
