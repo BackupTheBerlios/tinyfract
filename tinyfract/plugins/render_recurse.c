@@ -230,7 +230,6 @@ void render_recurse(render_t* handle)
 	int               x_count;
 	int               y_count;
 	int               square_size;
-	float		  prozent;
 	ordinal_number_t  *help;
 
 	#ifdef DEBUG
@@ -260,8 +259,7 @@ void render_recurse(render_t* handle)
 			/* Execute the fill square function. */
 			fill_square(handle,start_point,square_size);
 		}
-		prozent=(100*x_count)/(x_square-1);
-		printf("%d%\n",prozent);
+		printf("progress %d %d\n",x_count,x_square-1);
 	}
 }
 
