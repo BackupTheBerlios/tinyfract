@@ -247,11 +247,11 @@ void render_recurse(render_t* handle)
 	/* Calculate number of squares. */
 	x_square=handle->geometry.width/square_size;
 	y_square=handle->geometry.height/square_size;
-	
+
 	/* Execute the fill square function for each square. */
-	for(x_count=0;x_count<x_square-1;x_count++)
+	for(x_count=0;x_count<x_square;x_count++)
 	{
-		for(y_count=0;y_count<y_square-1;y_count++)
+		for(y_count=0;y_count<y_square;y_count++)
 		{
 			/* Calculate the first corner of the square. */
 			start_point.x=x_count*square_size;
@@ -263,7 +263,6 @@ void render_recurse(render_t* handle)
 		prozent=(100*x_count)/(x_square-1);
 		printf("%d%\n",prozent);
 	}
-	printf("Finished");
 }
 
 /* Enumerate plugin facilities. */
