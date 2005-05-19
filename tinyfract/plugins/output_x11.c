@@ -22,22 +22,22 @@ typedef struct
 /* Color mapping functions. */
 float Rh(float H)
 {
-	if(H<1/3) return 1-(3*H);	
-	else if (H>2/3) return 3*H-2;
+	if(H<1.0/3) return 1-(3*H);	
+	else if (H>2.0/3) return 3*H-2;
 	else return 0;
 }
 
 float Gh(float H)
 {
-	if(H<1/3) return (3*H);	
-	else if (H>2/3) return 0;
+	if(H<1.0/3) return (3*H);	
+	else if (H>(2.0/3)) return 0;
 	else return 2-(3*H);
 }
 
 float Bh(float H)
 {
-	if(H<1/3) return 0;	
-	else if (H>2/3) return 3-(3*H);
+	if(H<1.0/3) return 0;	
+	else if (H>2.0/3) return 3-(3*H);
 	else return (3*H)-1;
 }
 
@@ -157,7 +157,7 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 		context->colors[i].blue= B(H,S,Br)*COLOR_CEILING;
 		
 		#ifdef DEBUG
-		fprintf(stderr,"color %d=%d,%d,%d\n",i,context->colors[i].red,context->colors[i].green,context->colors[i].blue);
+		fprintf(stderr,"Color %d: H%f,S%f,B%f==R%f,G%f,B%f\n",i,H,S,Br,R(H,S,Br),G(H,S,Br),B(H,S,Br));
 		#endif
 		
 		context->colors[i].flags=DoRed|DoGreen|DoBlue;
