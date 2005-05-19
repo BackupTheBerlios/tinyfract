@@ -6,7 +6,7 @@
 
 #define MAX_COLORS 65536
 #define COLOR_CEILING 65535
-/* ganbang in da house */
+/* Local data structure. */
 typedef struct
 {
 	XGCValues gcpxval;
@@ -155,6 +155,10 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 		context->colors[i].red=  R(H,S,Br)*COLOR_CEILING;
 		context->colors[i].green=G(H,S,Br)*COLOR_CEILING;
 		context->colors[i].blue= B(H,S,Br)*COLOR_CEILING;
+		
+		#ifdef DEBUG
+		fprintf(stderr,"color %d=%d,%d,%d\n",i,context->colors[i].red,context->colors[i].green,context->colors[i].blue);
+		#endif
 		
 		context->colors[i].flags=DoRed|DoGreen|DoBlue;
 		XAllocColor(context->dpy,DefaultColormap(context->dpy,DefaultScreen(context->dpy)),
