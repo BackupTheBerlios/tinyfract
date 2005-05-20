@@ -156,10 +156,6 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 		context->colors[i].green=G(H,S,Br)*COLOR_CEILING;
 		context->colors[i].blue= B(H,S,Br)*COLOR_CEILING;
 		
-		#ifdef DEBUG
-		fprintf(stderr,"Color %d: H%f,S%f,B%f==R%f,G%f,B%f\n",i,H,S,Br,R(H,S,Br),G(H,S,Br),B(H,S,Br));
-		#endif
-		
 		context->colors[i].flags=DoRed|DoGreen|DoBlue;
 		XAllocColor(context->dpy,DefaultColormap(context->dpy,DefaultScreen(context->dpy)),
 			&context->colors[i]);
