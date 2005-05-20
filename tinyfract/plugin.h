@@ -83,9 +83,9 @@ typedef struct
 	plugin_fractal_constructor_t*        constructor;
 	plugin_fractal_destructor_t*         destructor;
 	plugin_fractal_calculate_function_t* calculate_function;
-	complex_number_t                     center;
+	view_position_t                      center;
 	ordinal_number_t                     iteration_steps;
-	real_number_t                        scale;
+	ordinal_number_t                     scale;
 } plugin_facility_fractal_t;
 
 typedef struct

@@ -222,14 +222,33 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 		switch (event.type)
 		{
 			case ButtonPress:
-				position->x=event.xbutton.x;
-				position->y=event.xbutton.y;
-				position->type=event.xbutton.button;
+			
 				#ifdef DEBUG
 				fprintf(stderr,"c%d,%d\n",event.xbutton.x,event.xbutton.y);
 				fprintf(stderr,"Button Pressed: %d\n", event.xbutton.button);
 				#endif
-				goto exit_func;
+				switch (position->type=event.xbutton.button)
+				{
+					case 1:
+					case 4:
+						position->x=event.xbutton.x;
+						position->y=event.xbutton.y;
+						position->type=autozoom_zoom_in;
+						goto exit_func;
+					case 3:
+					case 5:
+						position->x=event.xbutton.x;
+						position->y=event.xbutton.y;
+						position->type=autozoom_zoom_out;
+						goto exit_func;
+					case 2:
+						position->x=event.xbutton.x;
+						position->y=event.xbutton.y;
+						position->type=autozoom_push;
+						goto exit_func;
+					default:
+						break;
+				}
 			case MapNotify:
 			case PropertyNotify:
 			case ReparentNotify:

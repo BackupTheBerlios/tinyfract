@@ -76,10 +76,11 @@ void fill_rect_aa(aa_t* handle, const view_position_t position, const view_dimen
 }
 
 /* Flush asciiart viewport */
-void flush_viewport_aa(aa_t* handle)
+void flush_viewport_aa(aa_t* handle, button_event_t* position)
 {
 	aa_render(handle->context_aa,&aa_defrenderparams,0,0,aa_imgwidth(handle->context_aa),aa_imgheight(handle->context_aa));
 	aa_flush(handle->context_aa);
+	position->type=autozoom_do_nothing;
 }
 
 /* Put pixel into asciiart viewport. */

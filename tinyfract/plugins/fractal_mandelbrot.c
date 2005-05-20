@@ -28,6 +28,7 @@ static julia_t* constructor_julia(const ordinal_number_t iteration_steps, long l
 
 	/* Get memory for the fractal context. */
 	if (!(context=malloc(sizeof(julia_t)))) return NULL;
+	args_help=malloc(sizeof(args));
 	mpf_init(Im(context->C));
 	mpf_init(Re(context->C));
 
@@ -38,7 +39,7 @@ static julia_t* constructor_julia(const ordinal_number_t iteration_steps, long l
 	{
 		if (strchr(args, ',')==NULL)
 		{
-			real_param=malloc(sizeof(char)*(prec+1));
+			real_param=malloc(sizeof(char)*(prec+1));	
 			sscanf(args,"%s",real_param);
 			mpf_set_str(Re(context->C),real_param,10);
 			mpf_set_str(Im(context->C),"1",10);
@@ -46,15 +47,12 @@ static julia_t* constructor_julia(const ordinal_number_t iteration_steps, long l
 		}
 		else
 		{
-			args_help=malloc(sizeof(args));
 			strcpy(args_help,args);
 			real_param=strtok(args_help,",");
 			imaginary_param=strtok(NULL,"\0");
 
 			mpf_set_str(Re(context->C),real_param,10);
 			mpf_set_str(Im(context->C),imaginary_param,10);
-			free(real_param);
-			free(imaginary_param);
 			free(args_help);
 		}
 	}
@@ -63,11 +61,6 @@ static julia_t* constructor_julia(const ordinal_number_t iteration_steps, long l
 		mpf_set_si(Re(context->C),0);
 		mpf_set_si(Im(context->C),1);
 	}
-
-	#if 0
-	mpf_set_str(Re(context->C),"0",10);
-	mpf_set_str(Im(context->C),"1",10);
-	#endif
 
 	context->prec=prec;
 	#ifdef DEBUG 

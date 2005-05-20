@@ -49,14 +49,11 @@ int main(int argc, char* argv[])
 	long long int            prec=0;              /* Precision from command line or user input. */
 	
 	/* Variables and constants for option parsing. */
-	char             command;
 	int              flags=0;
 	view_dimension_t geometry;
 	ordinal_number_t iteration_steps;
-	char*            scale_str=NULL;
 	real_number_t    scale;
         char*            plugin_path=NULL;
-	char*            center_str=NULL;
 	complex_number_t center;
 	button_event_t   new_center_real;
 	complex_number_t new_center_virtual;
@@ -64,10 +61,10 @@ int main(int argc, char* argv[])
 	view_position_t  help;
 	real_number_t    convert;
 	
-	const int CENTER_SET=1;
+//	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
-	const int ITERATION_STEPS_SET=4;
-	const int SCALE_SET=8;
+//	const int ITERATION_STEPS_SET=4;
+//	const int SCALE_SET=8;
 
 	int c;
 	int option_index=0;
@@ -295,8 +292,7 @@ int main(int argc, char* argv[])
 	}
 
 
-/* Hier muss die Hauptschleife beginnen. */
-
+#if 0
 	#ifdef DEBUG
 	fprintf(stderr,"parameter from stdin:\n");
 	#endif
@@ -335,16 +331,21 @@ int main(int argc, char* argv[])
 				printf("iteration_steps: %u\n",iteration_steps);
 
 	/* Parse options. */
+	parse_options(&center,center_str,&scale,scale_str,prec);
+#endif
 	mpf_set_default_prec(sizeof(char)*prec);
-
+	
+	mpf_init(convert);
 	mpf_init(Re(center));
 	mpf_init(Im(center));
 	mpf_init(scale);
 	mpf_init(Re(new_center_virtual));
 	mpf_init(Im(new_center_virtual));
-	mpf_init(convert);
 
-	parse_options(&center,center_str,&scale,scale_str,prec);
+	mpf_set_ui(scale,fractal_facility->facility.fractal.scale);
+	mpf_set_ui(Re(center),fractal_facility->facility.fractal.center.x);
+	mpf_set_ui(Im(center),fractal_facility->facility.fractal.center.y);
+	iteration_steps=fractal_facility->facility.fractal.iteration_steps;
 
 	for(;;)
 	{
@@ -374,9 +375,6 @@ int main(int argc, char* argv[])
 		#endif
 		(*render_facility->facility.render.render_function)(render);
 
-		/* Infoem the user about watching the fractal. */
-		fprintf(stderr,"%s: Ready with rendering. You can look at the fractal know.\n", argv[0]);
-
 		/* Flush and close the output viewport. */
 		#ifdef DEBUG
 		fprintf(stderr,"Flushing viewport.\n");
@@ -389,7 +387,7 @@ int main(int argc, char* argv[])
 		#endif
 		switch (new_center_real.type)
 		{
-			case 1:
+			case autozoom_zoom_in:
 				help.x=new_center_real.x;
 				help.y=new_center_real.y;
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
@@ -398,14 +396,14 @@ int main(int argc, char* argv[])
 				mpf_set_d(convert,zoom_factor);
 				mpf_div(scale,scale,convert);
 				break;
-			case 4:
+			case autozoom_push:
 				help.x=new_center_real.x;
 				help.y=new_center_real.y;
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
 				break;
-			case 3:
+			case autozoom_zoom_out:
 				help.x=new_center_real.x;
 				help.y=new_center_real.y;
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
@@ -414,14 +412,10 @@ int main(int argc, char* argv[])
 				mpf_set_d(convert,zoom_factor);
 				mpf_mul(scale,scale,convert);
 				break;
-			case 5:
-				help.x=new_center_real.x;
-				help.y=new_center_real.y;
-				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
-				VARCOPY(Re(center),Re(new_center_virtual));
-				VARCOPY(Im(center),Im(new_center_virtual));
+			case autozoom_do_nothing:
+				sleep(100);
 				break;
-			case 2:
+			case autozoom_quit:
 				goto exit_func;
 			default:
 				break;
@@ -439,13 +433,6 @@ int main(int argc, char* argv[])
 		(*render_facility->facility.render.destructor)(render);
 	}			
 				
-				break;
-			case '\n':
-				break;
-			default:
-				printf("fehler\n");
-		}
-	}
 /* Hier ist das Ende der Hauptschleife. */
 
 exit_func:

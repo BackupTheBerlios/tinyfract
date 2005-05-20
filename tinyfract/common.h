@@ -42,11 +42,20 @@ typedef struct
 
 typedef unsigned int pixel_value;
 
+typedef enum
+{
+	autozoom_zoom_in,
+	autozoom_zoom_out,
+	autozoom_quit,
+	autozoom_push,
+	autozoom_do_nothing
+} autozoom_event_enum_t;
+
 typedef struct
 {
-	unsigned int x;
-	unsigned int y;
-	unsigned int type;
+	unsigned int          x;
+	unsigned int          y;
+	autozoom_event_enum_t type;
 } button_event_t;
 
 /*typedef struct
