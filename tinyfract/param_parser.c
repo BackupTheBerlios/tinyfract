@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "common.h"
+#include "plugin.h"
 
 #if 0
 int parse_real_number_list(const char args[], real_number_t* argv[])
@@ -94,5 +95,53 @@ int make_vinumber(complex_number_t* virtual_position,view_position_t real_positi
 	return 0;
 }
 
+int render_and_flush(
+		const plugin_facility_t* render_facility,
+		complex_number_t         render_center,
+		view_dimension_t         render_geometry,
+		real_number_t            render_scale,
+		const plugin_facility_t* render_fractal_facility,
+		const plugin_facility_t* render_flush_output_facility,
+		void*                    render_fractal,
+		void*                    render_output,
+		char                     render_args[],
+		long long int            render_prec,
+		void*                    flush_output,
+		button_event_t*          flush_button_press)
+{
+	void* render;	/* Handle for render facility. */
 
+	/* Initialize the render facility. */
+	#ifdef DEBUG
+	fprintf(stderr,"Initializing render facility.\n");
+	#endif
+	if (!(render=(*render_facility->facility.render.constructor)
+		(render_center,
+		 render_geometry,
+		 render_scale,
+		 render_fractal_facility,render_flush_output_facility,render_fractal,render_output,render_args,render_prec)))
+	{
+		perror("Could not initialize render facility");
+		exit(EXIT_FAILURE);
+	}
 
+	/* Render the fractal. */
+	#ifdef DEBUG
+	fprintf(stderr,"Rendering the fractal.\n");
+	#endif
+	(*render_facility->facility.render.render_function)(render);
+
+	/* Flush and close the output viewport. */
+	#ifdef DEBUG
+	fprintf(stderr,"Flushing viewport.\n");
+	#endif
+	(*render_flush_output_facility->facility.output.flush_viewport_function)(flush_output,flush_button_press);
+
+	/* Free the render facility used. */
+	#ifdef DEBUG
+	fprintf(stderr,"Closing render facility.\n");
+	#endif
+	(*render_facility->facility.render.destructor)(render);
+
+	return 0;
+}

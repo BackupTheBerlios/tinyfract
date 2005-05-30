@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 	real_number_t    scale;
         char*            plugin_path=NULL;
 	complex_number_t center;
-	button_event_t   new_center_real;
+	button_event_t   button_press;
 	complex_number_t new_center_virtual;
 	double           zoom_factor=10;
 	view_position_t  help;
@@ -246,6 +246,13 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	/* Test if precision was ginven. */
+	if(prec==0)
+	{
+		fprintf(stderr,"%s: You have to specify a precision.\n", argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
 	/* Load fractal facility. */
 	if (!(fractal_facility=load_plugin_facility(plugin_path,plugin_facility_fractal,fractal_type)))
 	{
@@ -333,8 +340,11 @@ int main(int argc, char* argv[])
 	/* Parse options. */
 	parse_options(&center,center_str,&scale,scale_str,prec);
 #endif
+
+	/* Set default prec. */
 	mpf_set_default_prec(sizeof(char)*prec);
-	
+
+	/* Initialize multiple precision variable. */
 	mpf_init(convert);
 	mpf_init(Re(center));
 	mpf_init(Im(center));
@@ -342,17 +352,26 @@ int main(int argc, char* argv[])
 	mpf_init(Re(new_center_virtual));
 	mpf_init(Im(new_center_virtual));
 
+	/* Set scale, center and iteration steps for the first rendering. */
 	mpf_set_ui(scale,fractal_facility->facility.fractal.scale);
 	mpf_set_ui(Re(center),fractal_facility->facility.fractal.center.x);
 	mpf_set_ui(Im(center),fractal_facility->facility.fractal.center.y);
 	iteration_steps=fractal_facility->facility.fractal.iteration_steps;
 
+	/* Start of main loop */
+	/* First rendering */
+	render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
+
 	for(;;)
 	{
+		#ifdef DEBUG
 		gmp_printf("position: %F.10f %F.10f\n",Re(center),Im(center));
 		gmp_printf("scale: %F.10f\n",scale);
+		#endif
 		printf("iteration_steps: %u\n",iteration_steps);
+
 		
+	#if 0
 		/* Initialize the render facility. */
 		#ifdef DEBUG
 		fprintf(stderr,"Initializing render facility.\n");
@@ -363,7 +382,7 @@ int main(int argc, char* argv[])
 			 geometry,
 			 scale,
 //			 fractal_facility->facility.fractal.scale,
-			 fractal_facility,output_facility,fractal,output,render_args,100)))
+			 fractal_facility,output_facility,fractal,output,render_args,prec)))
 		{
 			perror("Could not initialize render facility");
 			exit(EXIT_FAILURE);
@@ -379,61 +398,83 @@ int main(int argc, char* argv[])
 		#ifdef DEBUG
 		fprintf(stderr,"Flushing viewport.\n");
 		#endif
-		(*output_facility->facility.output.flush_viewport_function)(output,&new_center_real);
+		(*output_facility->facility.output.flush_viewport_function)(output,&button_press);
 
-		/* Calculate new centre. */
+	#endif
+
+		/* Switch the type of button press. */
 		#ifdef DEBUG
-		fprintf(stderr,"%s: Pressed Button is: %d.\n", argv[0], new_center_real.type);
+		fprintf(stderr,"%s: Button was pressed.\n", argv[0]);
 		#endif
-		switch (new_center_real.type)
+		switch (button_press.type)
 		{
 			case autozoom_zoom_in:
-				help.x=new_center_real.x;
-				help.y=new_center_real.y;
+				#ifdef DEBUG
+				fprintf(stderr,"Zoom in\n");
+				#endif
+				help.x=button_press.x;
+				help.y=button_press.y;
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
 				mpf_set_d(convert,zoom_factor);
 				mpf_div(scale,scale,convert);
+		render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
 				break;
 			case autozoom_push:
-				help.x=new_center_real.x;
-				help.y=new_center_real.y;
+				#ifdef DEBUG
+				fprintf(stderr,"push\n");
+				#endif
+				help.x=button_press.x;
+				help.y=button_press.y;
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
+		render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
 				break;
 			case autozoom_zoom_out:
-				help.x=new_center_real.x;
-				help.y=new_center_real.y;
+				#ifdef DEBUG
+				fprintf(stderr,"Zoom out\n");
+				#endif
+				help.x=button_press.x;
+				help.y=button_press.y;
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
 				mpf_set_d(convert,zoom_factor);
 				mpf_mul(scale,scale,convert);
+		render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
 				break;
-			case autozoom_do_nothing:
+			case autozoom_wait:
+				#ifdef DEBUG
+				fprintf(stderr,"wait\n");
+				#endif
 				sleep(100);
 				break;
+			case autozoom_do_nothing:
+				#ifdef DEBUG
+				fprintf(stderr,"Do nothing\n");
+				#endif
+				break;
 			case autozoom_quit:
+				#ifdef DEBUG
+				fprintf(stderr,"quit\n");
+				#endif
 				goto exit_func;
 			default:
 				break;
 		}
 
-		/* Sleep a while. */
-		#ifdef DEBUG
-		fprintf(stderr,"Waiting.\n");
-		#endif
-
+	#if 0
 		/* Free the render facility used. */
 		#ifdef DEBUG
 		fprintf(stderr,"Closing render facility.\n");
 		#endif
 		(*render_facility->facility.render.destructor)(render);
+	#endif
+
 	}			
-				
-/* Hier ist das Ende der Hauptschleife. */
+	/* End of main loop */
 
 exit_func:
 	

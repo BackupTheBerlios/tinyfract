@@ -48,6 +48,7 @@ typedef enum
 	autozoom_zoom_out,
 	autozoom_quit,
 	autozoom_push,
+	autozoom_wait,
 	autozoom_do_nothing
 } autozoom_event_enum_t;
 
