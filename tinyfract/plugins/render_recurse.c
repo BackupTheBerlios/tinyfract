@@ -234,15 +234,22 @@ void render_recurse(render_t* handle)
 	int               square_size;
 	char*             format;
 	ordinal_number_t  *help;
+	char*             format_string_center_real;
+	char*             format_string_center_imaginary;
+	char*             format_string_scale;
 
-	#ifdef DEBUG
-	//format=malloc(sizeof(char)*20);
-	//sprintf(format,"R:%%F.%lldf,I:%%F.%lldf\n",handle->prec,handle->prec);
-	//fprintf(stderr,"%s\n",format);
-	//gmp_printf(format,handle->center.real_part,handle->center.imaginary_part);
-	gmp_printf("R:%F.10f,I:%F.10f\n",handle->center.real_part,handle->center.imaginary_part);
-	gmp_printf("Scale:%F.10f\n",handle->scale);
-	#endif
+	/* Print infos like center and scale */
+	format_string_center_real=malloc(sizeof(char)*8+sizeof(long long int));
+	format_string_center_imaginary=malloc(sizeof(char)*8+sizeof(long long int));
+	format_string_scale=malloc(sizeof(char)*12+sizeof(long long int));
+
+	sprintf(format_string_center_real,"R:%%F.%df\n",handle->prec);
+	sprintf(format_string_center_imaginary,"I:%%F.%df\n",handle->prec);
+	sprintf(format_string_scale,"Scale:%%F.%df\n",handle->prec);
+
+	gmp_printf(format_string_center_real,Re(handle->center));
+	gmp_printf(format_string_center_imaginary,Im(handle->center));
+	gmp_printf(format_string_scale,handle->scale);
 
 	/* Get memory for points. */
 	handle->points=malloc((sizeof(ordinal_number_t))*handle->geometry.width*handle->geometry.height);
