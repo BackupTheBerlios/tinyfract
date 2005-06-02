@@ -23,14 +23,14 @@ typedef struct
 
 /* Constructor and destructor for dumb render function. */
 static render_t* constructor(
-		char                     center_real[],
-		char                     center_imaginary[],
+		complex_number_t         center,
 		const view_dimension_t   geometry,
-		char                     scale[],
+		real_number_t            scale,
 		const plugin_facility_t* fractal_facility,
 		const plugin_facility_t* output_facility,
 		const void*              fractal,
 		const void*              output,
+		const char               args[],
 		long long int            prec)
 {
 	render_t* context;
@@ -38,6 +38,7 @@ static render_t* constructor(
 	/* Get memory for the fractal context. */
 	if (!(context=malloc(sizeof(render_t)))) return NULL;
 
+	/* Init multiple precision vars. */
 	mpf_set_default_prec(sizeof(char)*prec);
 
 	mpf_init(Re(context->center));
@@ -45,19 +46,15 @@ static render_t* constructor(
 	mpf_init(context->scale);
 
 	/* Set the fractal context. */
-	mpf_set_str(Re(context->center),center_real,10);
-	mpf_set_str(Im(context->center),center_imaginary,10);
-	mpf_set_str(context->scale,scale,10);
+	mpf_set(Re(context->center),Re(center));
+	mpf_set(Im(context->center),Im(center));
+	mpf_set(context->scale,scale);
 	VARCOPY(context->prec,prec);
 	VARCOPY(context->geometry,geometry);
 	VARCOPY(context->fractal_facility,fractal_facility);
 	VARCOPY(context->output_facility,output_facility);
 	VARCOPY(context->fractal,fractal);
 	VARCOPY(context->output,output);
-
-	#ifdef DEBUG
-	gmp_printf("Re: %F.10f, Im: %F.10f\nScale: %F.10f\n", Re(context->center), Im(context->center), context->scale);
-	#endif	
 
 	/* Return the handle. */
 	return context;
@@ -82,6 +79,22 @@ void render_dumb(render_t* handle)
 	mpf_t            help_two;
 	ordinal_number_t steps;
 	int count=1;
+	char*             format_string_center_real;
+	char*             format_string_center_imaginary;
+	char*             format_string_scale;
+
+	/* Print infos like center and scale */
+	format_string_center_real=malloc(sizeof(char)*8+sizeof(long long int));
+	format_string_center_imaginary=malloc(sizeof(char)*8+sizeof(long long int));
+	format_string_scale=malloc(sizeof(char)*12+sizeof(long long int));
+
+	sprintf(format_string_center_real,"R:%%F.%df\n",handle->prec);
+	sprintf(format_string_center_imaginary,"I:%%F.%df\n",handle->prec);
+	sprintf(format_string_scale,"Scale:%%F.%df\n",handle->prec);
+
+	gmp_printf(format_string_center_real,Re(handle->center));
+	gmp_printf(format_string_center_imaginary,Im(handle->center));
+	gmp_printf(format_string_scale,handle->scale);
 
 
 	mpf_set_default_prec(sizeof(char)*handle->prec);
@@ -98,12 +111,11 @@ void render_dumb(render_t* handle)
 	shift.y=handle->geometry.height/2;
 	for(render_position.y=0;render_position.y<handle->geometry.height;render_position.y++)
 	{
+		printf("progress %d %d\n", render_position.y+1, handle->geometry.width);
 		for(render_position.x=0;render_position.x<handle->geometry.width;render_position.x++)
 		{
-			//gmp_printf("Help before: %F.10\n", help);
 			mpf_set_si(help_two,(render_position.x-shift.x));
 			mpf_mul(help,scaling_factor,help_two);
-			//gmp_printf("(%d-%d)*%F.10f=%F.10f\n",render_position.x, shift.x, scaling_factor, help);
 			mpf_add(Re(complex_position),Re(handle->center),help);
 
 			mpf_set_si(help_two,(render_position.y-shift.y));
@@ -111,10 +123,6 @@ void render_dumb(render_t* handle)
 			mpf_sub(Im(complex_position),Im(handle->center),help);
 
 			steps=(*handle->fractal_facility->facility.fractal.calculate_function)(handle->fractal,&complex_position);
-			#ifdef DEBUG
-			fprintf(stderr,"Steps: %d of Number: %d ", steps, count);
-			gmp_printf("On position: %F.10f %F.10f\n", Re(complex_position), Im(complex_position));
-			#endif
 
 			(*handle->output_facility->facility.output.put_pixel_function)
 				(handle->output,render_position,steps);
