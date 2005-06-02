@@ -186,6 +186,7 @@ void fill_square(render_t* handle,const view_position_t start_point,const int sq
 		/* End of recursion. */
 	}
 	else
+	{
 		/* Check if the corners have the same iterations. */
 		if(ul==ur && ul==ll && ll==lr)
 		{
@@ -215,8 +216,9 @@ void fill_square(render_t* handle,const view_position_t start_point,const int sq
 
 			/* End of recursion when all fill_square functions came back. */
 		}		
-}
 
+	}
+}
 
 
 /* Render the picture by spliting into squares */
@@ -230,16 +232,20 @@ void render_recurse(render_t* handle)
 	int               x_count;
 	int               y_count;
 	int               square_size;
+	char*             format;
 	ordinal_number_t  *help;
 
 	#ifdef DEBUG
+	//format=malloc(sizeof(char)*20);
+	//sprintf(format,"R:%%F.%lldf,I:%%F.%lldf\n",handle->prec,handle->prec);
+	//fprintf(stderr,"%s\n",format);
+	//gmp_printf(format,handle->center.real_part,handle->center.imaginary_part);
 	gmp_printf("R:%F.10f,I:%F.10f\n",handle->center.real_part,handle->center.imaginary_part);
 	gmp_printf("Scale:%F.10f\n",handle->scale);
 	#endif
 
 	/* Get memory for points. */
 	handle->points=malloc((sizeof(ordinal_number_t))*handle->geometry.width*handle->geometry.height);
-
 	/* Calculate square_size. */
 	square_size=1<<handle->param;
 
@@ -259,7 +265,7 @@ void render_recurse(render_t* handle)
 			/* Execute the fill square function. */
 			fill_square(handle,start_point,square_size);
 		}
-		printf("progress %d %d\n",x_count,x_square-1);
+		printf("progress %d %d\n",x_count+1,x_square);
 	}
 }
 

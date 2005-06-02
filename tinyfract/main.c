@@ -360,7 +360,7 @@ int main(int argc, char* argv[])
 
 	/* Start of main loop */
 	/* First rendering */
-	render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
+	//render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
 
 	for(;;)
 	{
@@ -371,7 +371,6 @@ int main(int argc, char* argv[])
 		printf("iteration_steps: %u\n",iteration_steps);
 
 		
-	#if 0
 		/* Initialize the render facility. */
 		#ifdef DEBUG
 		fprintf(stderr,"Initializing render facility.\n");
@@ -400,7 +399,6 @@ int main(int argc, char* argv[])
 		#endif
 		(*output_facility->facility.output.flush_viewport_function)(output,&button_press);
 
-	#endif
 
 		/* Switch the type of button press. */
 		#ifdef DEBUG
@@ -419,7 +417,7 @@ int main(int argc, char* argv[])
 				VARCOPY(Im(center),Im(new_center_virtual));
 				mpf_set_d(convert,zoom_factor);
 				mpf_div(scale,scale,convert);
-		render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
+	//	render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
 				break;
 			case autozoom_push:
 				#ifdef DEBUG
@@ -430,7 +428,7 @@ int main(int argc, char* argv[])
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
-		render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
+	//	render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
 				break;
 			case autozoom_zoom_out:
 				#ifdef DEBUG
@@ -443,7 +441,7 @@ int main(int argc, char* argv[])
 				VARCOPY(Im(center),Im(new_center_virtual));
 				mpf_set_d(convert,zoom_factor);
 				mpf_mul(scale,scale,convert);
-		render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
+	//	render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
 				break;
 			case autozoom_wait:
 				#ifdef DEBUG

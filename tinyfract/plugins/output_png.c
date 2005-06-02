@@ -1,4 +1,3 @@
-#include <X11/Xlib.h>
 #include <gd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,17 +5,14 @@
 #include "../plugin.h"
 
 #define MAX_COLORS 65536
-#define COLOR_CEILING 65535
-/* ganbang in da house */
+#define COLOR_CEILING 256 
+
+
 typedef struct
 {
-	XGCValues  gcpxval;
-	GC         gcpx;
-	GC 	   gc;
 	gdImagePtr dpy;
-	Window     win;
- 	Pixmap     pxmap;
-	XColor     ccolors[MAX_COLORS];
+	FILE*      output_file;
+	int        colors[MAX_COLORS];
 } png_t;	
 
 
@@ -59,7 +55,7 @@ float B(float H,float S,float Br)
 }
 
 /* Constructor and destructor for X11 output. */
-static x11_t* constructor_x11(const view_dimension_t dimension, const char args[])
+static png_t* constructor_png(const view_dimension_t dimension, const char args[])
 {
 	png_t* context;
 	int    i;
@@ -76,28 +72,18 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	
 
 	/* Get memory for the output context. */
-	if (!(context=malloc(sizeof(x11_t)))) return NULL;
+	if (!(context=malloc(sizeof(png_t)))) return NULL;
 
 	/* Initialize the viewport. */
-	/* Open the display. */
-	context->dpy=gdImageCreateTrueColor(context->geometry.width,context->geometry.height);
 	
-	#if 0
-	/* Create the window. */
-	int bgColor=WhitePixel(context->dpy,DefaultScreen(context->dpy));
-	context->win=XCreateSimpleWindow(context->dpy,DefaultRootWindow(context->dpy),
-			0,0,dimension.width,dimension.height,0,bgColor,bgColor);
-
-	/* Create a pixmap as double buffer. */
-	context->pxmap=XCreatePixmap(context->dpy,DefaultRootWindow(context->dpy),
-			dimension.width,dimension.height,16);
-
-	/* Create a "Graphics Context" for the window and the pixmap. */
-	context->gc=XCreateGC(context->dpy,context->win,0,NULL);
-	context->gcpx=XCreateGC(context->dpy,context->pxmap,0,NULL);
-
-	#endif
-	/* Check f parameters were given. */
+	
+	/* Open the display. */
+	context->dpy=gdImageCreateTrueColor(dimension.width,dimension.height);
+	
+	/* Save the name of the image. */
+	context->output_file=fopen("test.png","wb");
+	
+	/* Check if parameters were given. */
 	if(args==NULL)
 	{
 		fprintf(stderr,"Please insert output parameters\n");
@@ -156,46 +142,46 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 			}	
 		}
 		
-		context->colors[i].red=  R(H,S,Br)*COLOR_CEILING;
-		context->colors[i].green=G(H,S,Br)*COLOR_CEILING;
-		context->colors[i].blue= B(H,S,Br)*COLOR_CEILING;
-		
-		context->colors[i].flags=DoRed|DoGreen|DoBlue;
-		XAllocColor(context->dpy,DefaultColormap(context->dpy,DefaultScreen(context->dpy)),
-			&context->colors[i]);
+		context->colors[i]=gdImageColorAllocate(context->dpy,R(H,S,Br)*COLOR_CEILING,G(H,S,Br)*COLOR_CEILING,B(H,S,Br)*COLOR_CEILING);
 	}
-	
+
 	/* Return the handle. */
 	return context;
 }
 
-void destructor_x11(x11_t* handle)
+void destructor_png(png_t* handle)
 {
+	fclose(handle->output_file);
 	gdImageDestroy(handle->dpy);
 	free(handle);
 }
 
 /* Blit rectangle from pixelbuffer to X11 viewport. */
-void blit_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, pixel_value values[])
+void blit_rect_png(png_t* handle, const view_position_t position, const view_dimension_t dimension, pixel_value values[])
 {
 }
 
 
 /* Fill rectangle in X11 viewport with color. */
-void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
+void fill_rect_png(png_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
 {
-	gdImageRectangle(handle->dpy,position.x,position.y,handle->geometry.width+position.x,handle->geometry.height+position.y,handle->colors[value]);
+	gdImageRectangle(handle->dpy,
+			position.x,
+			position.y,
+			dimension.width+position.x,
+			dimension.height+position.y,
+			handle->colors[value]);
 }
 
 /* Put pixel into X11 viewport. */
-void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_value value)
+void put_pixel_png(png_t* handle, const view_position_t position, const pixel_value value)
 {
 	/* Put a pixel into the image. */
 	gdImageSetPixel(handle->dpy,position.x,position.x,handle->colors[value]);
 }
 
 /* Flush X11 viewport */
-void flush_viewport_x11(x11_t* handle, button_event_t* position)
+void flush_viewport_png(png_t* handle, button_event_t* position)
 {
 #if 0
 	XEvent event;
@@ -246,7 +232,9 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 
 exit_func: 
 #endif
-	position->type=2;
+	gdImagePng(handle->dpy,handle->output_file);
+	
+	position->type=autozoom_quit;
 	return;
 }
 
@@ -255,18 +243,18 @@ exit_func:
 volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 {
 	{
-		name: "x11",
+		name: "png",
 		type: plugin_facility_output,
 		facility:
 		{
 			output:
 			{
-				constructor:             (const plugin_output_constructor_t*) &constructor_x11,
-				destructor:              (const plugin_output_destructor_t*) &destructor_x11,
-				blit_rect_function:      (const plugin_output_blit_rect_function_t*) &blit_rect_x11,
-				fill_rect_function:      (const plugin_output_fill_rect_function_t*) &fill_rect_x11,
-				flush_viewport_function: (const plugin_output_flush_viewport_function_t*) &flush_viewport_x11,
-				put_pixel_function:      (const plugin_output_put_pixel_function_t*) &put_pixel_x11,
+				constructor:             (const plugin_output_constructor_t*) &constructor_png,
+				destructor:              (const plugin_output_destructor_t*) &destructor_png,
+				blit_rect_function:      (const plugin_output_blit_rect_function_t*) &blit_rect_png,
+				fill_rect_function:      (const plugin_output_fill_rect_function_t*) &fill_rect_png,
+				flush_viewport_function: (const plugin_output_flush_viewport_function_t*) &flush_viewport_png,
+				put_pixel_function:      (const plugin_output_put_pixel_function_t*) &put_pixel_png,
 			}
 		}
 	},

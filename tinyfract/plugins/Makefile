@@ -7,7 +7,7 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: fractal_mandelbrot.so output_x11.so output_aa.so render_recurse.so render_dumb.so render_record_tinyfract_fractalmovie.so fractal_lambda.so
+all: fractal_mandelbrot.so output_x11.so output_aa.so output_png.so render_recurse.so render_dumb.so fractal_lambda.so
 
 clean:
 	$(RM) -f *.o *.so
@@ -39,7 +39,7 @@ output_x11.so: output_x11.o
 output_png.o: output_png.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 output_png.so: output_png.o
-	$(LD) $(LDFLAGS) -o $@ -shared -L/usr/X11R6/lib -lXt -lXaw $^ 
+	$(LD) $(LDFLAGS) -o $@ -shared -lgd $^ 
 
 render_dumb.o: render_dumb.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
