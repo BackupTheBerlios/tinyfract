@@ -1,16 +1,17 @@
 #include <gd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "../common.h"
 #include "../plugin.h"
 
 #define MAX_COLORS 65536
-#define COLOR_CEILING 256 
+#define COLOR_CEILING 65536 
 
 
 typedef struct
 {
-	gdImagePtr dpy;
+	gdImagePtr im;
 	FILE*      output_file;
 	int        colors[MAX_COLORS];
 } png_t;	
@@ -54,8 +55,8 @@ float B(float H,float S,float Br)
 	return Br+Bh(H)*S*(1-Br);
 }
 
-/* Constructor and destructor for X11 output. */
-static png_t* constructor_png(const view_dimension_t dimension, const char args[])
+/* Constructor and destructor for png output. */
+static png_t* constructor_png(const view_dimension_t dimension, char args[])
 {
 	png_t* context;
 	int    i;
@@ -66,32 +67,48 @@ static png_t* constructor_png(const view_dimension_t dimension, const char args[
 	char   des[3];
 	int    mod[3];
 	float  thres[3];
-	
+
 	int   iteration_steps;
+	char* output_args;
 	char* name;
 	
 
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(png_t)))) return NULL;
 
-	/* Initialize the viewport. */
-	
-	
-	/* Open the display. */
-	context->dpy=gdImageCreateTrueColor(dimension.width,dimension.height);
-	
-	/* Save the name of the image. */
-	context->output_file=fopen("test.png","wb");
+	/* Parse the output args and the safing file name. */
+	output_args=strtok(args,"-");
+	name=strtok(NULL,"-");
+	#ifdef DEBUG
+	fprintf(stderr,"Output args: %s\n", output_args);
+	fprintf(stderr,"Safing file: %s\n", name);
+	#endif
+
 	
 	/* Check if parameters were given. */
-	if(args==NULL)
+	if(output_args==NULL)
 	{
 		fprintf(stderr,"Please insert output parameters\n");
 		exit(EXIT_FAILURE);
 	}
 
+	/* Check safing file was given. */
+	if(name==NULL)
+	{
+		fprintf(stderr,"Please insert a safing file for the image.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Initialize the viewport. */
+	
+	/* Open the display. */
+	context->im=gdImageCreateTrueColor(dimension.width,dimension.height);
+
+	/* Open the saving file. */
+	context->output_file=fopen(name,"wb");
+	
 	/* Scan the argument string. */
-	sscanf(args,"%c%d,%f%c%d,%f%c%d,%f",
+	sscanf(output_args,"%c%d,%f%c%d,%f%c%d,%f",
 		&des[0],&mod[0],&thres[0],
 		&des[1],&mod[1],&thres[1],
 		&des[2],&mod[2],&thres[2]);
@@ -100,8 +117,8 @@ static png_t* constructor_png(const view_dimension_t dimension, const char args[
 	/* Just for help now. */
 	iteration_steps=mod[0]*mod[1]*mod[2];
 
-	
-	
+
+
 	/* Allocate colors */
 	for(i=0;i<iteration_steps;i++)
 	{
@@ -112,7 +129,7 @@ static png_t* constructor_png(const view_dimension_t dimension, const char args[
 		{
 			if (thres[d]<0 || thres[d]>=1)
 			{
-				fprintf(stderr,"Illegal output format %s.\n",args);
+				fprintf(stderr,"Illegal output format %s.\n",output_args);
 				exit(EXIT_FAILURE);
 			}
 			switch (des[d])
@@ -142,7 +159,7 @@ static png_t* constructor_png(const view_dimension_t dimension, const char args[
 			}	
 		}
 		
-		context->colors[i]=gdImageColorAllocate(context->dpy,R(H,S,Br)*COLOR_CEILING,G(H,S,Br)*COLOR_CEILING,B(H,S,Br)*COLOR_CEILING);
+		context->colors[i]=gdImageColorAllocate(context->im,R(H,S,Br)*COLOR_CEILING,G(H,S,Br)*COLOR_CEILING,B(H,S,Br)*COLOR_CEILING);
 	}
 
 	/* Return the handle. */
@@ -151,8 +168,10 @@ static png_t* constructor_png(const view_dimension_t dimension, const char args[
 
 void destructor_png(png_t* handle)
 {
+	/* Close open image and safing file. */
 	fclose(handle->output_file);
-	gdImageDestroy(handle->dpy);
+	gdImageDestroy(handle->im);
+	
 	free(handle);
 }
 
@@ -162,10 +181,11 @@ void blit_rect_png(png_t* handle, const view_position_t position, const view_dim
 }
 
 
-/* Fill rectangle in X11 viewport with color. */
+/* Fill rectangle in image with color. */
 void fill_rect_png(png_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
 {
-	gdImageRectangle(handle->dpy,
+	/* Put a filled rectangle in the image. */
+	gdImageFilledRectangle(handle->im,
 			position.x,
 			position.y,
 			dimension.width+position.x,
@@ -173,68 +193,22 @@ void fill_rect_png(png_t* handle, const view_position_t position, const view_dim
 			handle->colors[value]);
 }
 
-/* Put pixel into X11 viewport. */
+/* Put pixel into the image viewport. */
 void put_pixel_png(png_t* handle, const view_position_t position, const pixel_value value)
 {
 	/* Put a pixel into the image. */
-	gdImageSetPixel(handle->dpy,position.x,position.x,handle->colors[value]);
+	gdImageSetPixel(handle->im,position.x,position.y,handle->colors[value]);
 }
 
-/* Flush X11 viewport */
+/* Safe the image */
 void flush_viewport_png(png_t* handle, button_event_t* position)
 {
-#if 0
-	XEvent event;
-	XWindowAttributes attributes;
+	/* Safe the image. */
+	gdImagePng(handle->im,handle->output_file);
 	
-	/* We want to get MapNotify events for our window. */
-	//XSelectInput(handle->dpy,handle->win,StructureNotifyMask);
-	XSelectInput(handle->dpy,handle->win,0xffffff);
-
-	/* Now "map" the window (that is, make it appear on the screen). */
-	XMapWindow(handle->dpy,handle->win);
-
-	/* Get window size. */
-	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
-	
-	for(;;)
-	{
-		/* Wait for an event. */
-		XWindowEvent(handle->dpy,handle->win,0xffffff,&event);
-		#ifdef DEBUG
-		fprintf(stderr,"Event: %d\n",event.type);
-		#endif
-		switch (event.type)
-		{
-			case ButtonPress:
-				position->x=event.xbutton.x;
-				position->y=event.xbutton.y;
-				position->type=event.xbutton.button;
-				#ifdef DEBUG
-				fprintf(stderr,"c%d,%d\n",event.xbutton.x,event.xbutton.y);
-				fprintf(stderr,"Button Pressed: %d\n", event.xbutton.button);
-				#endif
-				goto exit_func;
-			case MapNotify:
-			case PropertyNotify:
-			case ReparentNotify:
-			case ConfigureNotify:
-				/* Put double buffer onto the window. */
-				XCopyArea(handle->dpy,handle->pxmap,handle->win,handle->gc,
-						0,0,attributes.width,attributes.height,0,0);
-				/* Send request to the server */
-			        XFlush(handle->dpy);
-				break;	
-			default:
-				break;
-		}
-	}
-
-exit_func: 
-#endif
-	gdImagePng(handle->dpy,handle->output_file);
-	
+	/* Call the main function that the programm is over. */
 	position->type=autozoom_quit;
+
 	return;
 }
 

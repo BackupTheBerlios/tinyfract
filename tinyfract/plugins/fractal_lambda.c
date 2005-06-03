@@ -1,6 +1,7 @@
 #include <gmp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../common.h"
 #include "../plugin.h"
 #include "../param_parser.h"
@@ -18,6 +19,9 @@ typedef struct
 static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, long long int prec, const char args[])
 {
 	lambda_t* context;
+	char*     real_param;
+	char*     imaginary_param;
+	char*     args_help;
 	
 	/* Get memory for the fractal context. */
 	if (!(context=malloc(sizeof(lambda_t)))) return NULL;
@@ -30,30 +34,38 @@ static lambda_t* constructor_lambda(const ordinal_number_t iteration_steps, long
 	/* Set the fractal context. */
 	context->iteration_steps=iteration_steps;
 	
-	#if 0
-	if(args)
+	if(args!=NULL)
 	{
-		if(strchr(args,',')==0)
+		if (strchr(args, ',')==NULL)
 		{
-			sscanf(args,"%lf", &Re(context->lambda));
-			Im(context->lambda)=0;
+			real_param=malloc(sizeof(char)*(prec+1));	
+			sscanf(args,"%s",real_param);
+			mpf_set_str(Re(context->lambda),real_param,10);
+			mpf_set_str(Im(context->lambda),"0",10);
+			free(real_param);
 		}
-		else sscanf(args,"%lf,%lf",&Re(context->lambda),&Im(context->lambda));
+		else
+		{
+			args_help=malloc(sizeof(args));
+			strcpy(args_help,args);
+			real_param=strtok(args_help,",");
+			imaginary_param=strtok(NULL,"\0");
+
+			mpf_set_str(Re(context->lambda),real_param,10);
+			mpf_set_str(Im(context->lambda),imaginary_param,10);
+			free(args_help);
+		}
 	}
 	else
 	{
-		Re(context->lambda)=1;
-		Im(context->lambda)=0;
+		mpf_set_si(Re(context->lambda),1);
+		mpf_set_si(Im(context->lambda),0);
 	}
-	#endif
-
-	mpf_set_d(Re(context->lambda),1);
-	mpf_set_d(Im(context->lambda),0);
 
 	context->prec=prec;
 
  	#ifdef DEBUG 
-	gmp_fprintf(stderr,"Lambda parameter: %s,%F.10f,%F.10f\n",args,Re(context->lambda),Im(context->lambda));
+	gmp_fprintf(stderr,"Lambda parameter: %F.10f,%F.10f\n",Re(context->lambda),Im(context->lambda));
 	#endif
 
 	/* Return the handle. */
@@ -70,58 +82,60 @@ static void destructor_lambda(lambda_t* handle)
 /* Lambda formula: z(0)=p, lambda=const., z(n+1) = lambda*z(n)*(1 - z(n)). */
 static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_t* position)
 {
-	mpf_set_default_prec(sizeof(char)*handle->prec);
 
 
 	/* Lambda fractal constants. */
 	real_number_t bailout_square;
 
-	mpf_init(bailout_square);
-	mpf_set_d(bailout_square,4);
-
 	/* Three helper variables. */
 	real_number_t    radius_square;
-	mpf_t            help;
-	mpf_t            help_two;
+	real_number_t    help;
+	real_number_t    help_two;
 	ordinal_number_t step;
 	
-	mpf_init(radius_square);
-	mpf_init(help);
-	mpf_init(help_two);
-
 	/*
 	 * Z stores the complex number during the iterations, Zn is the next iteration step.
 	 */
 	complex_number_t Z;
 	complex_number_t Zn;
 
-	mpf_init(Re(Z));
-	mpf_init(Im(Z));
-	mpf_init(Re(Zn));
-	mpf_init(Im(Zn));
-
 	/* These ones accelerate the calculation. */
 	complex_number_t Z_square;
 	real_number_t    ReZs_ImZs;
 	real_number_t    ReZ_ImZ;
 
+	/* Lambda parameter. */
+	complex_number_t lambda;
+
+	/* Init multiple precision vars. */
+	mpf_set_default_prec(sizeof(char)*handle->prec);
+	
+	mpf_init(bailout_square);
+	mpf_init(Re(lambda));
+	mpf_init(Im(lambda));
 	mpf_init(Re(Z_square));
 	mpf_init(Im(Z_square));
 	mpf_init(ReZs_ImZs);
 	mpf_init(ReZ_ImZ);
+	mpf_init(Re(Z));
+	mpf_init(Im(Z));
+	mpf_init(Re(Zn));
+	mpf_init(Im(Zn));
+	mpf_init(radius_square);
+	mpf_init(help);
+	mpf_init(help_two);
 
-	/* Lambda parameter. */
-	complex_number_t lambda;
-
-	mpf_init(Re(lambda));
-	mpf_init(Im(lambda));
-
+	/* Set the bailout square constant. */
+	mpf_set_d(bailout_square,4);
+	
 	mpf_set(Re(lambda),Re(handle->lambda));
 	mpf_set(Im(lambda),Im(handle->lambda));
 
 	/* The calculation begins with the a point on the complex plane. */
-	VARCOPY(Z,*position);
+	mpf_set(Re(Z),position->real_part);
+	mpf_set(Im(Z),position->imaginary_part);
 
+	//fprintf(stderr,"Hallo\n");
 	/* Now do the iteration. */
 	for (step=0;step<handle->iteration_steps;step++)
 	{
@@ -134,7 +148,7 @@ static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_
 
  		/* Break the iteration if the mandelbrot bailout orbit is left. */
 		if (mpf_cmp(radius_square,bailout_square)>0) break;
-		
+
 		/* Two other speed up variables. */
 		mpf_sub(ReZs_ImZs,Re(Z_square),Im(Z_square));
 		mpf_mul(ReZ_ImZ,Im(Z),Re(Z));
@@ -148,7 +162,7 @@ static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_
 		mpf_mul_ui(help_two,Im(lambda),2);
 		mpf_mul(help_two,help_two,ReZ_ImZ);
 		mpf_sub(Re(Zn),help,help_two);
-		
+
 		mpf_mul(help,Re(lambda),Im(Z));
 		mpf_mul(help_two,Im(lambda),Re(Z));
 		mpf_add(help,help,help_two);
@@ -157,9 +171,10 @@ static ordinal_number_t calculate_lambda(lambda_t* handle, const complex_number_
 		mpf_mul_ui(help_two,Re(lambda),2);
 		mpf_mul(help_two,help_two,ReZ_ImZ);
 		mpf_add(Im(Zn),help,help_two);
-	
+
 		/* Copy Zn to Z */
-		VARCOPY(Z,Zn);
+		mpf_set(Re(Z),Re(Zn));
+		mpf_set(Im(Z),Im(Zn));
 	}
 
 	/* Clear multiple precision Variables. */
