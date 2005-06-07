@@ -7,7 +7,8 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: fractal_mandelbrot.so output_x11.so output_aa.so output_png.so render_recurse.so render_dumb.so fractal_lambda.so
+#all: fractal_mandelbrot.so output_x11.so output_aa.so render_recurse.so render_dumb.so render_record_tinyfract_fractalmovie.so fractal_lambda.so
+all: fractal_mandelbrot.so output_x11.so output_aa.so render_recurse.so render_dumb.so fractal_lambda.so
 
 clean:
 	$(RM) -f *.o *.so
