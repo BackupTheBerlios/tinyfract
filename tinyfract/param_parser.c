@@ -52,10 +52,6 @@ int parse_options(complex_number_t* center,char* center_source,real_number_t* sc
 	/* Parse scale. */
 	mpf_set_str(*scale,scale_source,10);
 
-	/* Free helpers. */
-	free(help1);
-	//free(help2);
-
 	return 0;
 }
 

@@ -60,11 +60,16 @@ int main(int argc, char* argv[])
 	double           zoom_factor=10;
 	view_position_t  help;
 	real_number_t    convert;
-	
-//	const int CENTER_SET=1;
+	char*            scale_str;
+	char*            center_str;
+	char             command;
+	char*            center_format_string;
+	char*            scale_format_string;
+
+	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
 //	const int ITERATION_STEPS_SET=4;
-//	const int SCALE_SET=8;
+	const int SCALE_SET=8;
 
 	int c;
 	int option_index=0;
@@ -202,6 +207,7 @@ int main(int argc, char* argv[])
 //	fprintf(stderr,"\tscale=%lf\n",scale);
 #endif
 
+
 	/* Test if plugin path was given. */
 	if (!plugin_path)
 	{
@@ -246,7 +252,7 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	/* Test if precision was ginven. */
+	/* Test if precision was given. */
 	if(prec==0)
 	{
 		fprintf(stderr,"%s: You have to specify a precision.\n", argv[0]);
@@ -298,50 +304,7 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
-
-#if 0
-	#ifdef DEBUG
-	fprintf(stderr,"parameter from stdin:\n");
-	#endif
-
-	while (!feof(stdin))
-	{	
-		scanf("%c",&command);
-		switch (command)
-		{
-			case 'p':
-				if(prec==0)
-				{
-					fprintf(stderr,"%s: You have to specify a precision greater than zero!\n", argv[0]);
-					exit(EXIT_FAILURE);
-				}
-				center_str=malloc(sizeof(char)*(prec*2+2));
-				scanf("%s", center_str);
-				flags|=CENTER_SET;
-				break;
-			case 's':
-				if(prec==0)
-				{
-					fprintf(stderr,"%s: You have to specify a precision greater than zero!\n", argv[0]);
-					exit(EXIT_FAILURE);
-				}
-				scale_str=malloc(sizeof(char)*(prec+1));
-				scanf("%s",scale_str);
-				flags|=SCALE_SET;
-				break;
-			case 'i':
-				scanf("%u",&iteration_steps);
-				break;
-			case 'r':
-				printf("position: %s\n",center_str);
-				printf("scale: %s\n",scale_str);
-				printf("iteration_steps: %u\n",iteration_steps);
-
-	/* Parse options. */
-	parse_options(&center,center_str,&scale,scale_str,prec);
-#endif
-
-	/* Set default prec. */
+	/* Set default precision. */
 	mpf_set_default_prec(sizeof(char)*prec);
 
 	/* Initialize multiple precision variable. */
@@ -351,36 +314,62 @@ int main(int argc, char* argv[])
 	mpf_init(scale);
 	mpf_init(Re(new_center_virtual));
 	mpf_init(Im(new_center_virtual));
+	
+	/* Get memory for the center and scale string. */
+	scale_str=malloc(sizeof(char)*(prec+1));
+	center_str=malloc(sizeof(char)*(prec*2+2));
 
-	/* Set scale, center and iteration steps for the first rendering. */
-	mpf_set_ui(scale,fractal_facility->facility.fractal.scale);
-	mpf_set_ui(Re(center),fractal_facility->facility.fractal.center.x);
-	mpf_set_ui(Im(center),fractal_facility->facility.fractal.center.y);
-	iteration_steps=fractal_facility->facility.fractal.iteration_steps;
+	/* Make the format string for multiple precision. */
+	center_format_string=malloc(sizeof(char)*18+sizeof(long long int)*2);
+	scale_format_string=malloc(sizeof(char)*12+sizeof(long long int));
 
-	/* Start of main loop */
-	/* First rendering */
-	//render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
+	sprintf(center_format_string,"center %%F.%lldf %%F.%lldf\n",prec,prec);
+	sprintf(scale_format_string,"scale %%F.%lldf\n",prec);
 
+	/* Start of main loop. */
 	for(;;)
 	{
+		/* Set command not to r. */
+		command='r';
 		#ifdef DEBUG
-		gmp_printf("position: %F.10f %F.10f\n",Re(center),Im(center));
-		gmp_printf("scale: %F.10f\n",scale);
+		fprintf(stderr,"parameter from stdin:\n");
 		#endif
-		printf("iteration_steps: %u\n",iteration_steps);
+		do
+		{	
+			scanf("%c",&command);
+			switch (command)
+			{
+				case 'p':
+					scanf("%s", center_str);
+					flags|=CENTER_SET;
+					break;
+				case 's':
+					scanf("%s",scale_str);
+					flags|=SCALE_SET;
+					break;
+				case 'i':
+					scanf("%u",&iteration_steps);
+					break;
+				case 'q':
+					goto exit_func;
+					break;
+				case 'r':
+					break;
+			}
+		}
+		while(command!='r');
 
-		
+		/* Parse options. */
+		parse_options(&center,center_str,&scale,scale_str,prec);
+
 		/* Initialize the render facility. */
 		#ifdef DEBUG
 		fprintf(stderr,"Initializing render facility.\n");
 		#endif
 		if (!(render=(*render_facility->facility.render.constructor)
 			(center,
-//			(fractal_facility->facility.fractal.center,
 			 geometry,
 			 scale,
-//			 fractal_facility->facility.fractal.scale,
 			 fractal_facility,output_facility,fractal,output,render_args,prec)))
 		{
 			perror("Could not initialize render facility");
@@ -399,7 +388,6 @@ int main(int argc, char* argv[])
 		#endif
 		(*output_facility->facility.output.flush_viewport_function)(output,&button_press);
 
-
 		/* Switch the type of button press. */
 		#ifdef DEBUG
 		fprintf(stderr,"%s: Button was pressed.\n", argv[0]);
@@ -417,7 +405,9 @@ int main(int argc, char* argv[])
 				VARCOPY(Im(center),Im(new_center_virtual));
 				mpf_set_d(convert,zoom_factor);
 				mpf_div(scale,scale,convert);
-	//	render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
+				gmp_printf(center_format_string,Re(center),Im(center));
+				gmp_printf(scale_format_string,scale);
+				printf("iteration_steps %u\n", iteration_steps);
 				break;
 			case autozoom_push:
 				#ifdef DEBUG
@@ -428,7 +418,9 @@ int main(int argc, char* argv[])
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
-	//	render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
+				gmp_printf(center_format_string,Re(center),Im(center));
+				gmp_printf(scale_format_string,scale);
+				printf("iteration_steps %u\n", iteration_steps);
 				break;
 			case autozoom_zoom_out:
 				#ifdef DEBUG
@@ -441,13 +433,9 @@ int main(int argc, char* argv[])
 				VARCOPY(Im(center),Im(new_center_virtual));
 				mpf_set_d(convert,zoom_factor);
 				mpf_mul(scale,scale,convert);
-	//	render_and_flush(render_facility,center,geometry,scale,fractal_facility,output_facility,fractal,output,render_args,prec,output,&button_press);
-				break;
-			case autozoom_wait:
-				#ifdef DEBUG
-				fprintf(stderr,"wait\n");
-				#endif
-				sleep(100);
+				gmp_printf(center_format_string,Re(center),Im(center));
+				gmp_printf(scale_format_string,scale);
+				printf("iteration_steps %u\n", iteration_steps);
 				break;
 			case autozoom_do_nothing:
 				#ifdef DEBUG
@@ -462,17 +450,13 @@ int main(int argc, char* argv[])
 			default:
 				break;
 		}
-
-	#if 0
-		/* Free the render facility used. */
+		/* Free the render facility_used. */
 		#ifdef DEBUG
 		fprintf(stderr,"Closing render facility.\n");
 		#endif
 		(*render_facility->facility.render.destructor)(render);
-	#endif
-
-	}			
-	/* End of main loop */
+	}
+	/* End of main loop. */
 
 exit_func:
 	
@@ -487,6 +471,12 @@ exit_func:
 	fprintf(stderr,"Closing fractal facility.\n");
 	#endif
 	(*fractal_facility->facility.fractal.destructor)(fractal);
+
+	/* Free the center and scale strings and format strings. */
+	free(center_str);
+	free(scale_str);
+	free(scale_format_string);
+	free(center_format_string);
 
 	/* Free the multiple precision variables. */
 	mpf_clear(Re(center));
