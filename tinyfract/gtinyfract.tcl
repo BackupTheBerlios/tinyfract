@@ -1,6 +1,27 @@
 #!/usr/bin/wish
 
-wm title . "graphic tinyfract"
+wm title . "Tinyfract GUI"
+
+## Standard parameters.
+set fractal mandelbrot
+set geometry "500x500"
+set plugin_path $env(HOME)/cvs/tinyfract/plugins
+set output_method x11
+set output_parameter "H10,.5B10,.5S10,.5"
+set render_method recurse
+set render_parameter 3
+set precision 20
+
+
+
+
+
+
+
+## Call tinyfract with standard parameters.
+set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
+
+
 
 
 
@@ -208,18 +229,19 @@ proc render {} \
 		set out_param "-O$help"
 	}
 
-	if { [ catch { exec ./tinyfract $fractal $geom $plug_path $center $iter $out_meth $out_param $ren_meth $ren_param $scale } error_message ] == 1 } \
-	{
-		toplevel .stdout
-		wm title .stdout "Message"
-		text .stdout.error -xscrollcommand ".stdout.scroll set"
-		scrollbar .stdout.scroll -orient vertical -command { .stdout.error yview }
-		button .stdout.exit -text "OK" -command "destroy .stdout"
-		.stdout.error insert end "Following message was given:\n\n$error_message\n\nIf You dont know waht the error means write an E-Mail to the programmers of this\nprogramm:\nJan Kandziora <jjj@gmx.de>\nAlexander Kreiss <AKreiss@gmx.de>\n"
-		pack .stdout.scroll -side right -fill y -expand 1
-		pack .stdout.error -expand 1 -fill both
-		pack .stdout.exit -expand 1 -fill both
-	}
+#	if { [ catch { exec ./tinyfract $fractal $geom $plug_path $center $iter $out_meth $out_param $ren_meth $ren_param $scale } error_message ] == 1 } \
+#	{
+#		toplevel .stdout
+#		wm title .stdout "Message"
+#		text .stdout.error -xscrollcommand ".stdout.scroll set"
+#		scrollbar .stdout.scroll -orient vertical -command { .stdout.error yview }
+#		button .stdout.exit -text "OK" -command "destroy .stdout"
+#		.stdout.error insert end "Following message was given:\n\n$error_message\n\nIf You dont know waht the error means write an E-Mail to the programmers of this\nprogramm:\nJan Kandziora <jjj@gmx.de>\nAlexander Kreiss <AKreiss@gmx.de>\n"
+#		pack .stdout.scroll -side right -fill y -expand 1
+#		pack .stdout.error -expand 1 -fill both
+#		pack .stdout.exit -expand 1 -fill both
+#	}
+
 }
 
 
