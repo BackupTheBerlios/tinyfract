@@ -1,5 +1,10 @@
 #!/usr/bin/wish
 
+## Include Iwidgets
+package require Itcl
+package require Itk
+package require Iwidgets
+
 wm title . "Tinyfract GUI"
 
 ## Standard parameters.
@@ -13,6 +18,27 @@ set render_parameter 3
 set precision 20
 
 
+## Function for making a progress bar
+proc progress_bar { actual total } \
+{
+	if { $actual == 0 } \
+	{
+		.buttons.progress reset
+	}
+	.buttons.progress configure -steps $total
+	.buttons.progress step
+
+}
+
+
+## Function for status parsing
+proc parse_status { message } \
+{
+	if { [ scan $message "progress %d %d" actual total ] == 2 } \
+	{
+		progress_bar $actual $total
+	}
+}
 
 
 
@@ -22,12 +48,17 @@ set precision 20
 set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
 
 
+puts $TINYFRACT_FD "p0,0\ns4\ni1000\nr\n"
+
+flush $TINYFRACT_FD
+
+fileevent $TINYFRACT_FD readable { set line [ gets $TINYFRACT_FD ] ; puts $line ; parse_status $line }
 
 
 
 
 
-
+## Make labels and info fields
 frame .topic -bg blue 
 frame .info_first -bg red
 frame .info_second -bg yellow
@@ -45,7 +76,7 @@ label .info_first.fractal -text "Fractal type:"
 label .info_first.geom -text "Geometry(your screen: [ winfo screenwidth . ]x[winfo screenheight . ]):"
 label .info_first.plug_path -text "Plugin path:"
 label .info_first.center -text "Center:"
-label .info_first.iter -text "Iteration steps:"
+label .info_first.iteration_steps -text "Iteration steps:"
 
 label .info_second.out_meth -text "Output method:"
 label .info_second.out_param -text "Output method parameters:"
@@ -57,7 +88,7 @@ entry .param_first.fractal
 entry .param_first.geom
 entry .param_first.plug_path
 entry .param_first.center
-entry .param_first.iter
+entry .param_first.iteration_steps
 
 entry .param_second.out_meth
 entry .param_second.out_param 
@@ -65,11 +96,14 @@ entry .param_second.ren_meth
 entry .param_second.ren_param
 entry .param_second.scale
 
+iwidgets::feedback .buttons.progress \
+	-labeltext "Progress"
+
 .param_first.fractal insert 0 "xxx"
 .param_first.geom insert 0 "xxx"
 .param_first.plug_path insert 0 "xxx"
 .param_first.center insert 0 "xxx"
-.param_first.iter insert 0 "xxx"
+.param_first.iteration_steps insert 0 "xxx"
 .param_second.out_meth insert 0 "xxx"
 .param_second.out_param insert 0 "xxx"
 .param_second.ren_meth insert 0 "xxx"
@@ -96,7 +130,7 @@ proc render {} \
 	set geom [ .param_first.geom get ]
 	set plug_path [ .param_first.plug_path get ]
 	set center [ .param_first.center get ]
-	set iter [ .param_first.iter get ]
+	set iteration_steps [ .param_first.iteration_steps get ]
 	set out_meth [ .param_second.out_meth get ]
 	set out_param [ .param_second.out_param get ]
 	set ren_meth [ .param_second.ren_meth get ]
@@ -149,15 +183,15 @@ proc render {} \
 	} else \
 	{
 		set help $center
-		set center "-c$help"
+		set center "-$help"
 	}
-	if ([regexp "xxx" $iter]==1) \
+	if ([regexp "xxx" $iteration_steps]==1) \
 	{
-		set iter ""
+		set iteration_steps ""
 	} else \
 	{
-		set help $iter
-		set iter "-i$help"
+		set help $iteration_steps
+		set iteration_steps "-$help"
 	}
 
 	if ([regexp "xxx" $out_meth]==1) \
@@ -200,7 +234,7 @@ proc render {} \
 	} else \
 	{
 		set help $scale
-		set scale "-s$help"
+		set scale "$help"
 	}
 
 	if ([regexp "xxx" $ren_param]==1) \
@@ -229,25 +263,13 @@ proc render {} \
 		set out_param "-O$help"
 	}
 
-#	if { [ catch { exec ./tinyfract $fractal $geom $plug_path $center $iter $out_meth $out_param $ren_meth $ren_param $scale } error_message ] == 1 } \
-#	{
-#		toplevel .stdout
-#		wm title .stdout "Message"
-#		text .stdout.error -xscrollcommand ".stdout.scroll set"
-#		scrollbar .stdout.scroll -orient vertical -command { .stdout.error yview }
-#		button .stdout.exit -text "OK" -command "destroy .stdout"
-#		.stdout.error insert end "Following message was given:\n\n$error_message\n\nIf You dont know waht the error means write an E-Mail to the programmers of this\nprogramm:\nJan Kandziora <jjj@gmx.de>\nAlexander Kreiss <AKreiss@gmx.de>\n"
-#		pack .stdout.scroll -side right -fill y -expand 1
-#		pack .stdout.error -expand 1 -fill both
-#		pack .stdout.exit -expand 1 -fill both
-#	}
-
+	puts $TINYFRACT_FD "p$center\ns$scale\ni$iteration_stepsation_steps\nr\n"
 }
 
 
 button .buttons.cancel \
 	-text "Cancel" \
-	-command "exit"
+	-command {exit;puts $TINYFRACT_FD q;flush $TINYFRACT_FD;close $TINYFRACT_FD}
 
 button .buttons.render \
 	-text "Render" \
@@ -270,7 +292,7 @@ pack .info_first.fractal -expand 1 -fill both
 pack .info_first.geom -expand 1 -fill both
 pack .info_first.plug_path -expand 1 -fill both
 pack .info_first.center -expand 1 -fill both
-pack .info_first.iter -expand 1 -fill both
+pack .info_first.iteration_steps -expand 1 -fill both
 
 pack .info_second.out_meth -expand 1 -fill both
 pack .info_second.out_param -expand 1 -fill both
@@ -282,7 +304,7 @@ pack .param_first.fractal -expand 1 -fill both
 pack .param_first.geom -expand 1 -fill both
 pack .param_first.plug_path -expand 1 -fill both
 pack .param_first.center -expand 1 -fill both
-pack .param_first.iter -expand 1 -fill both
+pack .param_first.iteration_steps -expand 1 -fill both
 
 pack .param_second.out_meth -expand 1 -fill both
 pack .param_second.out_param -expand 1 -fill both
@@ -290,8 +312,10 @@ pack .param_second.ren_meth -expand 1 -fill both
 pack .param_second.ren_param -expand 1 -fill both
 pack .param_second.scale -expand 1 -fill both
 
-pack .buttons.cancel -expand 1 -fill both -side left
-pack .buttons.render -expand 1 -fill both -side left
+pack .buttons.cancel -expand 1 -fill both
+pack .buttons.render -expand 1 -fill both
+pack .buttons.progress -expand 1 -fill both
+
 
 pack .topic -expand 1 -fill both
 pack .buttons -side bottom -expand 1 -fill both
@@ -299,3 +323,5 @@ pack .info_first -side left -expand 1 -fill both
 pack .param_first -side left -expand 1 -fill both
 pack .info_second -side left -expand 1 -fill both
 pack .param_second -side left -expand 1 -fill both
+
+

@@ -247,9 +247,9 @@ void render_recurse(render_t* handle)
 	sprintf(format_string_center_imaginary,"I:%%F.%df\n",handle->prec);
 	sprintf(format_string_scale,"Scale:%%F.%df\n",handle->prec);
 
-	gmp_printf(format_string_center_real,Re(handle->center));
-	gmp_printf(format_string_center_imaginary,Im(handle->center));
-	gmp_printf(format_string_scale,handle->scale);
+	gmp_fprintf(stderr,format_string_center_real,Re(handle->center));
+	gmp_fprintf(stderr,format_string_center_imaginary,Im(handle->center));
+	gmp_fprintf(stderr,format_string_scale,handle->scale);
 
 	/* Get memory for points. */
 	handle->points=malloc((sizeof(ordinal_number_t))*handle->geometry.width*handle->geometry.height);
@@ -272,7 +272,9 @@ void render_recurse(render_t* handle)
 			/* Execute the fill square function. */
 			fill_square(handle,start_point,square_size);
 		}
-		printf("progress %d %d\n",x_count+1,x_square);
+		fprintf(stdout,"progress %d %d\n",x_count+1,x_square);
+		fflush(stdout);
+		//fpurge(stdout);
 	}
 }
 

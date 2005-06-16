@@ -405,9 +405,13 @@ int main(int argc, char* argv[])
 				VARCOPY(Im(center),Im(new_center_virtual));
 				mpf_set_d(convert,zoom_factor);
 				mpf_div(scale,scale,convert);
+				/* Printf new center, iteration steps and scale */
 				gmp_printf(center_format_string,Re(center),Im(center));
+				fflush(stdout);
 				gmp_printf(scale_format_string,scale);
+				fflush(stdout);
 				printf("iteration_steps %u\n", iteration_steps);
+				fflush(stdout);
 				break;
 			case autozoom_push:
 				#ifdef DEBUG
@@ -418,9 +422,13 @@ int main(int argc, char* argv[])
 				make_vinumber(&new_center_virtual,help,geometry,scale,center,prec);
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
+				/* Printf new center, iteration steps and scale */
 				gmp_printf(center_format_string,Re(center),Im(center));
+				fflush(stdout);
 				gmp_printf(scale_format_string,scale);
+				fflush(stdout);
 				printf("iteration_steps %u\n", iteration_steps);
+				fflush(stdout);
 				break;
 			case autozoom_zoom_out:
 				#ifdef DEBUG
@@ -433,9 +441,13 @@ int main(int argc, char* argv[])
 				VARCOPY(Im(center),Im(new_center_virtual));
 				mpf_set_d(convert,zoom_factor);
 				mpf_mul(scale,scale,convert);
+				/* Printf new center, iteration steps and scale */
 				gmp_printf(center_format_string,Re(center),Im(center));
+				fflush(stdout);
 				gmp_printf(scale_format_string,scale);
+				fflush(stdout);
 				printf("iteration_steps %u\n", iteration_steps);
+				fflush(stdout);
 				break;
 			case autozoom_do_nothing:
 				#ifdef DEBUG
