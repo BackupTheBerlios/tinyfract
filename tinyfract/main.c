@@ -63,8 +63,7 @@ int main(int argc, char* argv[])
 	char*            scale_str;
 	char*            center_str;
 	char             command;
-	char*            center_format_string;
-	char*            scale_format_string;
+	char*            format_string;
 
 	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
@@ -320,11 +319,9 @@ int main(int argc, char* argv[])
 	center_str=malloc(sizeof(char)*(prec*2+2));
 
 	/* Make the format string for multiple precision. */
-	center_format_string=malloc(sizeof(char)*18+sizeof(long long int)*2);
-	scale_format_string=malloc(sizeof(char)*12+sizeof(long long int));
+	format_string=malloc(sizeof(char)*26+sizeof(long long int)*3+sizeof(ordinal_number_t));
 
-	sprintf(center_format_string,"center %%F.%lldf %%F.%lldf\n",prec,prec);
-	sprintf(scale_format_string,"scale %%F.%lldf\n",prec);
+	sprintf(format_string,"new_args %%F.%lldf %%F.%lldf %%F.%lldf %%u\n",prec,prec,prec);
 
 	/* Start of main loop. */
 	for(;;)
@@ -406,11 +403,7 @@ int main(int argc, char* argv[])
 				mpf_set_d(convert,zoom_factor);
 				mpf_div(scale,scale,convert);
 				/* Printf new center, iteration steps and scale */
-				gmp_printf(center_format_string,Re(center),Im(center));
-				fflush(stdout);
-				gmp_printf(scale_format_string,scale);
-				fflush(stdout);
-				printf("iteration_steps %u\n", iteration_steps);
+				gmp_printf(format_string,Re(center),Im(center),scale,iteration_steps);
 				fflush(stdout);
 				break;
 			case autozoom_push:
@@ -423,11 +416,7 @@ int main(int argc, char* argv[])
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
 				/* Printf new center, iteration steps and scale */
-				gmp_printf(center_format_string,Re(center),Im(center));
-				fflush(stdout);
-				gmp_printf(scale_format_string,scale);
-				fflush(stdout);
-				printf("iteration_steps %u\n", iteration_steps);
+				gmp_printf(format_string,Re(center),Im(center),scale,iteration_steps);
 				fflush(stdout);
 				break;
 			case autozoom_zoom_out:
@@ -442,11 +431,7 @@ int main(int argc, char* argv[])
 				mpf_set_d(convert,zoom_factor);
 				mpf_mul(scale,scale,convert);
 				/* Printf new center, iteration steps and scale */
-				gmp_printf(center_format_string,Re(center),Im(center));
-				fflush(stdout);
-				gmp_printf(scale_format_string,scale);
-				fflush(stdout);
-				printf("iteration_steps %u\n", iteration_steps);
+				gmp_printf(format_string,Re(center),Im(center),scale,iteration_steps);
 				fflush(stdout);
 				break;
 			case autozoom_do_nothing:
@@ -484,11 +469,10 @@ exit_func:
 	#endif
 	(*fractal_facility->facility.fractal.destructor)(fractal);
 
-	/* Free the center and scale strings and format strings. */
+	/* Free the center and scale strings and the format string. */
 	free(center_str);
 	free(scale_str);
-	free(scale_format_string);
-	free(center_format_string);
+	free(format_string);
 
 	/* Free the multiple precision variables. */
 	mpf_clear(Re(center));

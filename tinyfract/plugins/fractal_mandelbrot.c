@@ -64,7 +64,7 @@ static julia_t* constructor_julia(const ordinal_number_t iteration_steps, long l
 
 	context->prec=prec;
 	#ifdef DEBUG 
-	gmp_printf("Julia parameter: %F.10f,%F.10f\n",Re(context->C),Im(context->C));
+	gmp_fprintf(stderr,"Julia parameter: %F.10f,%F.10f\n",Re(context->C),Im(context->C));
 	#endif
 	
 	/* Return the handle. */

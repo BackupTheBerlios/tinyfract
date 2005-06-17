@@ -92,9 +92,9 @@ void render_dumb(render_t* handle)
 	sprintf(format_string_center_imaginary,"I:%%F.%df\n",handle->prec);
 	sprintf(format_string_scale,"Scale:%%F.%df\n",handle->prec);
 
-	gmp_printf(format_string_center_real,Re(handle->center));
-	gmp_printf(format_string_center_imaginary,Im(handle->center));
-	gmp_printf(format_string_scale,handle->scale);
+	gmp_fprintf(stderr,format_string_center_real,Re(handle->center));
+	gmp_fprintf(stderr,format_string_center_imaginary,Im(handle->center));
+	gmp_fprintf(stderr,format_string_scale,handle->scale);
 
 
 	mpf_set_default_prec(sizeof(char)*handle->prec);
@@ -112,6 +112,7 @@ void render_dumb(render_t* handle)
 	for(render_position.y=0;render_position.y<handle->geometry.height;render_position.y++)
 	{
 		printf("progress %d %d\n", render_position.y+1, handle->geometry.width);
+		fflush(stdout);
 		for(render_position.x=0;render_position.x<handle->geometry.width;render_position.x++)
 		{
 			mpf_set_si(help_two,(render_position.x-shift.x));
