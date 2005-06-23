@@ -13,19 +13,48 @@ set parser [ interp create -safe ]
 
 ## Standard parameters
 set fractal mandelbrot
-set geometry "500x500"
+set geometry "[ expr [ winfo screenwidth . ] * 2 / 3 ]x[ expr [ winfo screenheight . ] * 2 / 3 ]"
 set plugin_path $env(HOME)/cvs/tinyfract/plugins
 set output_method x11
-set output_parameter "H10,.5B10,.5S10,.5"
-set render_method recurse
-set render_parameter 3
-set precision 20
-set scale 4
-set center 0,0
-set iteration_steps 400
+set output_parameter "H10,.5S10,.5B10,.5"
+set render_method "recurse"
+set render_parameter "3"
+set precision "100"
+set scale "4"
+set center "0,0"
+set iteration_steps "100"
 set fractal_args ""
+set zoom_faktor 10
 
 set TINYFRACT_FD 0
+
+## Function for loading
+proc load_options {} \
+{
+	global fractal plugin_path output_method output_parameter render_method render_parameter precision center scale iteration_stepsfractal_args
+
+	set path [ tk_getOpenFile ]
+	set path_fd [ open $path "r" ]
+	set command [ gets $path_fd ]
+
+	for "" "$command == -1" "set command [ gets $path_fd ]" "catch [ $command ]"
+}
+	
+
+## Function for saving
+proc safe_options {} \
+{
+	global fractal plugin_path output_method output_parameter render_method render_parameter precision fractal_args
+
+	set path [ tk_getOpenFile ]
+	set path_fd [ open $path "r+" ]
+	
+	set center [ .left.center.center get ]
+	set scale [ .left.scale.scale get ]
+	set iteration_steps [ .left.iterations.iteration_steps get ]
+
+	puts $path_fd "set fractal $fractal\nset plugin_path $plugin_path\nset output_method $output_method\nset output_parameter $output_parameter\nset render_method $render_method\nset render_parameter $render_parameter\nset precision $precision\nset scale $scale\nset center $center\nset iteration_steps $iteration_steps\nset fractal_args $fractal_args\n"
+}
 
 ## Function for making a progress bar
 proc progress_cmd { actual total } \
@@ -44,13 +73,13 @@ $parser alias progress progress_cmd
 ## Function for putting new args
 proc new_args_cmd { center_real center_imaginary scale iteration_steps } \
 {
-	.param_first.center delete 0 end
-	.param_first.iteration_steps delete 0 end
-	.param_second.scale delete 0 end
+	.left.center.center delete 0 end
+	.left.iterations.iteration_steps delete 0 end
+	.left.scale.scale delete 0 end
 
-	.param_first.center insert 0 "$center_real,$center_imaginary"
-	.param_first.iteration_steps insert 0 "$iteration_steps"
-	.param_second.scale insert 0 "$scale"
+	.left.center.center insert 0 "$center_real,$center_imaginary"
+	.left.iterations.iteration_steps insert 0 "$iteration_steps"
+	.left.scale.scale insert 0 "$scale"
 }
 
 $parser alias new_args new_args_cmd
@@ -59,17 +88,17 @@ $parser alias new_args new_args_cmd
 ## Function for first rendering
 proc first_rendering {} \
 {
-	global test TINYFRACT_FD
+	global test TINYFRACT_FD geometry
 	
-	set fractal [ .param_first.fractal get ]
-	set geometry [ .param_first.geom get ]
-	set plugin_path [ .param_first.plug_path get ]
-	set output_method [ .param_second.out_meth get ]
-	set output_parameter [ .param_second.out_param get ]
-	set render_method [ .param_second.ren_meth get ]
-	set render_parameter [ .param_second.ren_param get ]
-	set precision [ .param_second.precision get ]
-	set fractal_args [ .param_first.fractal_args get ]
+	set fractal [ .params_for_tinyfract_starting.params.fractal get ]
+	set fractal_parameter [ .params_for_tinyfract_starting.params.fractal_parameter get ]
+	set plugin_path [ .params_for_tinyfract_starting.params.plugin_path get ]
+	set output_method [ .params_for_tinyfract_starting.params.output_method get ]
+	set output_parameter [ .params_for_tinyfract_starting.params.output_parameter get ]
+	set render_method [ .params_for_tinyfract_starting.params.render_method get ]
+	set render_parameter [ .params_for_tinyfract_starting.params.render_parameter get ]
+	set precision [ .params_for_tinyfract_starting.params.precision get ]
+	
 	set help ""
 
 	if ([regexp "xxx" $precision]==1) \
@@ -150,34 +179,6 @@ proc first_rendering {} \
 		set $ren_param ""
 	}
 
-
-	## Disable and enable entries
-	.param_first.fractal configure \
-		-state disabled
-	.param_first.geom configure \
-		-state disabled
-	.param_first.plug_path configure \
-		-state disabled
-	.param_first.center configure \
-		-state normal
-	.param_first.iteration_steps configure \
-		-state normal
-	.param_first.fractal_args configure \
-		-state disabled
-
-	.param_second.out_meth configure \
-		-state disabled
-	.param_second.out_param configure \
-		-state disabled
-	.param_second.ren_meth configure \
-		-state disabled
-	.param_second.ren_param configure \
-		-state disabled
-	.param_second.scale configure \
-		-state normal
-	.param_second.precision configure \
-		-state disabled
-
 	## Call tinyfract with standard parameters.
 	set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
 
@@ -185,29 +186,93 @@ proc first_rendering {} \
 
 }
 
-
-
-
-
 ## Start rendering function
-proc render { TINYFRACT_FD } \
+proc render { TINYFRACT_FD mode } \
 {
-	set center [ .param_first.center get ]
-	set scale [ .param_second.scale get ]
-	set iteration_steps [ .param_first.iteration_steps get ]
+	global zoom_faktor
+
+	if { $TINYFRACT_FD == 0 } \
+	{
+		puts "Error: No Pipe"
+		exit
+	}
+	set center [ .left.center.center get ]
+	set scale [ .left.scale.scale get ]
+	set iteration_steps [ .left.iterations.iteration_steps get ]
+
 
 	puts $TINYFRACT_FD "p$center\ns$scale\ni$iteration_steps\nr\n"
 
 	flush $TINYFRACT_FD
 }
 
-## Make labels and info fields
-frame .topic -bg blue 
-frame .info_first -bg red
-frame .info_second -bg yellow
-frame .param_first -bg black
-frame .param_second -bg green
-frame .buttons -bg pink 
+## Make Toplevel in witch first important parameters can be given
+
+## Build the toplevel
+
+toplevel .params_for_tinyfract_starting
+
+## Build necessary entry and information fields
+
+## Info labels
+frame .params_for_tinyfract_starting.info
+
+label .params_for_tinyfract_starting.info.fractal_info -text "Fractal type:"
+label .params_for_tinyfract_starting.info.fratctal_parameter_info -text "Fractal parameter:"
+label .params_for_tinyfract_starting.info.plugin_path_info -text "Plugin path:"
+label .params_for_tinyfract_starting.info.output_method_info -text "Output method:"
+label .params_for_tinyfract_starting.info.output_method_params_info -text "Output parameter:"
+label .params_for_tinyfract_starting.info.render_method_info -text "Render method:"
+label .params_for_tinyfract_starting.info.render_method_params_info -text "Render parameter:"
+label .params_for_tinyfract_starting.info.precision -text "Precision:"
+
+## Entries
+frame .params_for_tinyfract_starting.params
+
+entry .params_for_tinyfract_starting.params.fractal
+entry .params_for_tinyfract_starting.params.fractal_parameter
+entry .params_for_tinyfract_starting.params.plugin_path
+entry .params_for_tinyfract_starting.params.output_method
+entry .params_for_tinyfract_starting.params.output_parameter
+entry .params_for_tinyfract_starting.params.render_method
+entry .params_for_tinyfract_starting.params.render_parameter
+entry .params_for_tinyfract_starting.params.precision
+
+.params_for_tinyfract_starting.params.fractal insert 0 $fractal
+.params_for_tinyfract_starting.params.fractal_parameter insert 0 $fractal_args
+.params_for_tinyfract_starting.params.plugin_path insert 0 $plugin_path
+.params_for_tinyfract_starting.params.output_method insert 0 $output_method
+.params_for_tinyfract_starting.params.output_parameter insert 0 $output_parameter
+.params_for_tinyfract_starting.params.render_method insert 0 $render_method
+.params_for_tinyfract_starting.params.render_parameter insert 0 $render_parameter
+.params_for_tinyfract_starting.params.precision insert 0 $precision
+
+
+## Build Buttons
+frame .params_for_tinyfract_starting.buttons
+
+button .params_for_tinyfract_starting.buttons.start_tinyfract \
+	-text "OK" \
+	-command { first_rendering ; wm withdraw .params_for_tinyfract_starting }
+button .params_for_tinyfract_starting.buttons.cancel \
+	-text "Cancel" \
+	-command "exit"
+button .params_for_tinyfract_starting.buttons.load_parameter \
+	-text "Load" \
+	-command "load_options"
+
+
+
+## Make labels and info fields only for center, scale and iteration steps
+frame .left
+frame .right
+
+frame .topic
+frame .left.center
+frame .left.scale
+frame .left.iterations
+frame .right.zoom
+frame .buttons
 
 
 label .topic.headline \
@@ -215,52 +280,45 @@ label .topic.headline \
 	-font "-adobe-helvetica-bold-r-normal-*-24-*-*-*-*-*-iso8859-1" \
 	-fg red
 
-label .info_first.fractal -text "Fractal type:"
-label .info_first.geom -text "Geometry(your screen: [ winfo screenwidth . ]x[winfo screenheight . ]):"
-label .info_first.plug_path -text "Plugin path:"
-label .info_first.center -text "Center:"
-label .info_first.iteration_steps -text "Iteration steps:"
-label .info_first.fractal_args -text "Fractal Parameter:"
+label .left.center.center_info -text "Center:"
+label .left.iterations.iteration_steps_info -text "Iteration steps:"
+label .left.scale.scale_info -text "Scale:"
 
-label .info_second.out_meth -text "Output method:"
-label .info_second.out_param -text "Output method parameters:"
-label .info_second.ren_meth -text "Render method:"
-label .info_second.ren_param -text "Render method parameters:"
-label .info_second.scale -text "Scale:"
-label .info_second.precision -text "Precision:"
+entry .left.center.center
+entry .left.iterations.iteration_steps
+entry .left.scale.scale
 
-entry .param_first.fractal
-entry .param_first.geom
-entry .param_first.plug_path
-entry .param_first.center \
-	-state disabled
-entry .param_first.iteration_steps \
-	-state disabled
-entry .param_first.fractal_args
+.left.center.center insert 0 $center
+.left.iterations.iteration_steps insert 0 $iteration_steps
+.left.scale.scale insert 0 $scale
 
-entry .param_second.out_meth
-entry .param_second.out_param 
-entry .param_second.ren_meth
-entry .param_second.ren_param
-entry .param_second.scale \
-	-state disabled
-entry .param_second.precision
 
+## Build the progress bar
 iwidgets::feedback .buttons.progress \
 	-labeltext "Progress"
 
-.param_first.fractal insert 0 $fractal
-.param_first.geom insert 0 $geometry
-.param_first.plug_path insert 0 $plugin_path
-.param_first.center insert 0 $center
-.param_first.iteration_steps insert 0 $iteration_steps
-.param_first.fractal_args insert 0 $fractal_args
-.param_second.out_meth insert 0 $output_method
-.param_second.out_param insert 0 $output_parameter
-.param_second.ren_meth insert 0 $render_method
-.param_second.ren_param insert 0 $render_parameter
-.param_second.scale insert 0 $scale
-.param_second.precision insert 0 $precision
+## Build Safe and Cancel button
+button .buttons.cancel \
+	-text "Cancel" \
+	-command {exit;puts $TINYFRACT_FD q;flush $TINYFRACT_FD;close $TINYFRACT_FD}
+button .buttons.safe \
+	-text safe \
+	-command "safe_options"
+
+## Build Buttons for auto zooming
+label .right.zoom.faktor \
+	-text $zoom_faktor
+button .right.zoom.zoom_in \
+	-text "+" \
+	-command { render $TINYFRACT_FD 1 }
+button .right.zoom.zoom_out \
+	-text "-" \
+	-command { render $TINYFRACT_FD 0 }
+
+
+
+focus .params_for_tinyfract_starting.params.fractal
+
 
 toplevel .error
 label .error.bitmap -bitmap error
@@ -274,25 +332,6 @@ bind .error.return <ButtonPress> "set test 5"
 wm withdraw .error
 
 
-
-button .buttons.cancel \
-	-text "Cancel" \
-	-command {exit;puts $TINYFRACT_FD q;flush $TINYFRACT_FD;close $TINYFRACT_FD}
-
-button .buttons.render \
-	-text "Render" \
-	-command { render $TINYFRACT_FD }
-
-button .buttons.first_render \
-	-text "Start tinyfract" \
-	-command "first_rendering"
-
-
-
-
-focus .param_first.fractal
-
-
 grid .error.message -row 0 -column 1
 grid .error.bitmap -row 0 -column 0
 grid .error.exit -row 1 -column 1
@@ -300,45 +339,58 @@ grid .error.return -row 1 -column 0
 
 pack .topic.headline -expand 1 -fill both
 
-pack .info_first.fractal -expand 1 -fill both
-pack .info_first.geom -expand 1 -fill both
-pack .info_first.plug_path -expand 1 -fill both
-pack .info_first.center -expand 1 -fill both
-pack .info_first.iteration_steps -expand 1 -fill both
-pack .info_first.fractal_args -expand 1 -fill both
+pack .left.center.center_info -side left -expand 1 -fill both
+pack .left.center.center -side left -expand 1 -fill both
 
-pack .info_second.out_meth -expand 1 -fill both
-pack .info_second.out_param -expand 1 -fill both
-pack .info_second.ren_meth -expand 1 -fill both
-pack .info_second.ren_param -expand 1 -fill both
-pack .info_second.scale -expand 1 -fill both
-pack .info_second.precision -expand 1 -fill both
+pack .left.iterations.iteration_steps_info -side left -expand 1 -fill both
+pack .left.iterations.iteration_steps -side left -expand 1 -fill both
 
-pack .param_first.fractal -expand 1 -fill both
-pack .param_first.geom -expand 1 -fill both
-pack .param_first.plug_path -expand 1 -fill both
-pack .param_first.center -expand 1 -fill both
-pack .param_first.iteration_steps -expand 1 -fill both
-pack .param_first.fractal_args -expand 1 -fill both
+pack .left.scale.scale_info -side left -expand 1 -fill both
+pack .left.scale.scale -side left -expand 1 -fill both
 
-pack .param_second.out_meth -expand 1 -fill both
-pack .param_second.out_param -expand 1 -fill both
-pack .param_second.ren_meth -expand 1 -fill both
-pack .param_second.ren_param -expand 1 -fill both
-pack .param_second.scale -expand 1 -fill both
-pack .param_second.precision -expand 1 -fill both
+pack .right.zoom.faktor -expand 1 -fill both
+pack .right.zoom.zoom_in -side left -expand 1 -fill both
+pack .right.zoom.zoom_out -side left -expand 1 -fill both
 
 pack .buttons.cancel -expand 1 -fill both
-pack .buttons.render -expand 1 -fill both
-pack .buttons.first_render -expand 1 -fill both
+pack .buttons.safe -expand 1 -fill both
 pack .buttons.progress -expand 1 -fill both
 
-
 pack .topic -expand 1 -fill both
+pack .left.center -side left -expand 1 -fill both
+pack .left.scale -side left -expand 1 -fill both
+pack .left.iterations -side left -expand 1 -fill both
+pack .right.zoom -side left -expand 1 -fill both
 pack .buttons -side bottom -expand 1 -fill both
-pack .info_first -side left -expand 1 -fill both
-pack .param_first -side left -expand 1 -fill both
-pack .info_second -side left -expand 1 -fill both
-pack .param_second -side left -expand 1 -fill both
+
+pack .left -side left -expand 1 -fill both
+pack .right -side right -expand 1 -fill both
+
+pack .params_for_tinyfract_starting.info.fractal_info
+pack .params_for_tinyfract_starting.info.fratctal_parameter_info
+pack .params_for_tinyfract_starting.info.plugin_path_info
+pack .params_for_tinyfract_starting.info.output_method_info
+pack .params_for_tinyfract_starting.info.output_method_params_info
+pack .params_for_tinyfract_starting.info.render_method_info
+pack .params_for_tinyfract_starting.info.render_method_params_info
+pack .params_for_tinyfract_starting.info.precision
+
+pack .params_for_tinyfract_starting.params.fractal
+pack .params_for_tinyfract_starting.params.fractal_parameter
+pack .params_for_tinyfract_starting.params.plugin_path
+pack .params_for_tinyfract_starting.params.output_method
+pack .params_for_tinyfract_starting.params.output_parameter
+pack .params_for_tinyfract_starting.params.render_method
+pack .params_for_tinyfract_starting.params.render_parameter
+pack .params_for_tinyfract_starting.params.precision
+
+pack .params_for_tinyfract_starting.buttons.start_tinyfract
+pack .params_for_tinyfract_starting.buttons.cancel
+pack .params_for_tinyfract_starting.buttons.load_parameter
+
+
+pack .params_for_tinyfract_starting.info -side left -expand 1
+pack .params_for_tinyfract_starting.params -side left -expand 1
+pack .params_for_tinyfract_starting.buttons -side top -expand 1
 
 
