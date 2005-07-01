@@ -21,25 +21,77 @@ set render_method "recurse"
 set render_parameter "3"
 set precision "100"
 set scale "4"
-set center "0,0"
+set center_real 0
+set center_imaginary 0
 set iteration_steps "100"
 set fractal_args ""
 set zoom_faktor 10
 
 set TINYFRACT_FD 0
 
+## Set the geometry for .
+wm geometry . [ winfo screenwidth . ]x[winfo screenheight . ]
+
+## Withdraw .
+wm withdraw .
+
+## Function for inerting options
+proc insert {} \
+{
+	global fractal fractal_args plugin_path output_method output_parameter render_method render_parameter precision center_real center_imaginary scale iteration_steps
+
+	.params_for_tinyfract_starting.params.fractal delete 0 end
+	.params_for_tinyfract_starting.params.fractal_parameter delete 0 end
+	.params_for_tinyfract_starting.params.plugin_path delete 0 end
+	.params_for_tinyfract_starting.params.output_method delete 0 end
+	.params_for_tinyfract_starting.params.output_parameter delete 0 end
+	.params_for_tinyfract_starting.params.render_method delete 0 end
+	.params_for_tinyfract_starting.params.render_parameter delete 0 end
+	.params_for_tinyfract_starting.params.precision delete 0 end
+
+	.left.center_real.center_real delete 0 end
+	.left.center_imaginary.center_imaginary delete 0 end
+	.left.iterations.iteration_steps delete 0 end
+	.left.scale.scale delete 0 end
+	
+	.params_for_tinyfract_starting.params.fractal insert 0 $fractal
+	.params_for_tinyfract_starting.params.fractal_parameter insert 0 $fractal_args
+	.params_for_tinyfract_starting.params.plugin_path insert 0 $plugin_path
+	.params_for_tinyfract_starting.params.output_method insert 0 $output_method
+	.params_for_tinyfract_starting.params.output_parameter insert 0 $output_parameter
+	.params_for_tinyfract_starting.params.render_method insert 0 $render_method
+	.params_for_tinyfract_starting.params.render_parameter insert 0 $render_parameter
+	.params_for_tinyfract_starting.params.precision insert 0 $precision
+
+	.left.center_real.center_real insert 0 $center_real
+	.left.center_imaginary.center_imaginary insert 0 $center_imaginary
+	.left.iterations.iteration_steps insert 0 $iteration_steps
+	.left.scale.scale insert 0 $scale
+
+	update
+}
+
+## Function for defining variables
+proc define { name value } \
+{
+	global $name
+
+	set $name "$value"
+	puts "Defined $name $value"
+}
+$parser alias define define
+
 ## Function for loading
 proc load_options {} \
 {
-	global fractal plugin_path output_method output_parameter render_method render_parameter precision center scale iteration_stepsfractal_args
+	global parser
 
 	set path [ tk_getOpenFile ]
 	set path_fd [ open $path "r" ]
-	set command [ gets $path_fd ]
 
-	for "" "$command == -1" "set command [ gets $path_fd ]" "catch [ $command ]"
+	for {set line [ gets $path_fd ]} {![eof $path_fd]} {set line [ gets $path_fd ]} { $parser eval $line }
+	insert
 }
-	
 
 ## Function for saving
 proc safe_options {} \
@@ -49,11 +101,12 @@ proc safe_options {} \
 	set path [ tk_getOpenFile ]
 	set path_fd [ open $path "r+" ]
 	
-	set center [ .left.center.center get ]
+	set center_real [ .left.center_real.center_real get ]
+	set center_imaginary [ .left.center_imaginary.center_imaginary get ]
 	set scale [ .left.scale.scale get ]
 	set iteration_steps [ .left.iterations.iteration_steps get ]
 
-	puts $path_fd "set fractal $fractal\nset plugin_path $plugin_path\nset output_method $output_method\nset output_parameter $output_parameter\nset render_method $render_method\nset render_parameter $render_parameter\nset precision $precision\nset scale $scale\nset center $center\nset iteration_steps $iteration_steps\nset fractal_args $fractal_args\n"
+	puts $path_fd "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_args {$fractal_args}\n"
 }
 
 ## Function for making a progress bar
@@ -71,19 +124,29 @@ proc progress_cmd { actual total } \
 $parser alias progress progress_cmd
 
 ## Function for putting new args
-proc new_args_cmd { center_real center_imaginary scale iteration_steps } \
+proc new_args_cmd { center_real center_imaginary iteration_steps } \
 {
-	.left.center.center delete 0 end
+	.left.center_real.center_real delete 0 end
+	.left.center_imaginary.center_imaginary delete 0 end
 	.left.iterations.iteration_steps delete 0 end
-	.left.scale.scale delete 0 end
 
-	.left.center.center insert 0 "$center_real,$center_imaginary"
+	.left.center_real.center_real insert 0 "$center_real"
+	.left.center_imaginary.center_imaginary insert 0 "$center_imaginary"
 	.left.iterations.iteration_steps insert 0 "$iteration_steps"
-	.left.scale.scale insert 0 "$scale"
 }
 
 $parser alias new_args new_args_cmd
 
+## Function which evals options
+proc eventdata { TINYFRACT_FD } \
+{
+	global parser
+	if {![ eof $TINYFRACT_FD ] } \
+	{
+		set line [ gets $TINYFRACT_FD ]
+		if { [ catch [ $parser eval $line ] result ] != 0 } { puts $result }	
+	}
+}
 
 ## Function for first rendering
 proc first_rendering {} \
@@ -181,9 +244,11 @@ proc first_rendering {} \
 
 	## Call tinyfract with standard parameters.
 	set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
+	puts "tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision"
 
-	fileevent $TINYFRACT_FD readable { set line [ gets $TINYFRACT_FD ] ; if { [ catch [ $parser eval $line ] result ] != 0 } { puts $result } }
+	fileevent $TINYFRACT_FD readable { eventdata $TINYFRACT_FD }
 
+	wm deiconify .
 }
 
 ## Start rendering function
@@ -196,12 +261,17 @@ proc render { TINYFRACT_FD mode } \
 		puts "Error: No Pipe"
 		exit
 	}
-	set center [ .left.center.center get ]
-	set scale [ .left.scale.scale get ]
+
+	if { $mode == 1 } \
+	{
+		puts "div [ .left.scale.scale get ] $zoom_faktor"
+	}
+	set center_real [ .left.center_real.center_real get ]
+	set center_imaginary [ .left.center_imaginary.center_imaginary get ]
 	set iteration_steps [ .left.iterations.iteration_steps get ]
 
 
-	puts $TINYFRACT_FD "p$center\ns$scale\ni$iteration_steps\nr\n"
+	puts $TINYFRACT_FD "p$center_real,$center_imaginary\ns$scale\ni$iteration_steps\nr\n"
 
 	flush $TINYFRACT_FD
 }
@@ -238,15 +308,6 @@ entry .params_for_tinyfract_starting.params.render_method
 entry .params_for_tinyfract_starting.params.render_parameter
 entry .params_for_tinyfract_starting.params.precision
 
-.params_for_tinyfract_starting.params.fractal insert 0 $fractal
-.params_for_tinyfract_starting.params.fractal_parameter insert 0 $fractal_args
-.params_for_tinyfract_starting.params.plugin_path insert 0 $plugin_path
-.params_for_tinyfract_starting.params.output_method insert 0 $output_method
-.params_for_tinyfract_starting.params.output_parameter insert 0 $output_parameter
-.params_for_tinyfract_starting.params.render_method insert 0 $render_method
-.params_for_tinyfract_starting.params.render_parameter insert 0 $render_parameter
-.params_for_tinyfract_starting.params.precision insert 0 $precision
-
 
 ## Build Buttons
 frame .params_for_tinyfract_starting.buttons
@@ -268,7 +329,8 @@ frame .left
 frame .right
 
 frame .topic
-frame .left.center
+frame .left.center_real
+frame .left.center_imaginary
 frame .left.scale
 frame .left.iterations
 frame .right.zoom
@@ -280,17 +342,18 @@ label .topic.headline \
 	-font "-adobe-helvetica-bold-r-normal-*-24-*-*-*-*-*-iso8859-1" \
 	-fg red
 
-label .left.center.center_info -text "Center:"
+label .left.center_real.center_real_info -text "Center(Real part):"
+label .left.center_imaginary.center_imaginary_info -text "Center(Imaginary part):"
 label .left.iterations.iteration_steps_info -text "Iteration steps:"
 label .left.scale.scale_info -text "Scale:"
 
-entry .left.center.center
+entry .left.center_real.center_real
+entry .left.center_imaginary.center_imaginary
 entry .left.iterations.iteration_steps
 entry .left.scale.scale
 
-.left.center.center insert 0 $center
-.left.iterations.iteration_steps insert 0 $iteration_steps
-.left.scale.scale insert 0 $scale
+## Insert options
+insert
 
 
 ## Build the progress bar
@@ -339,8 +402,10 @@ grid .error.return -row 1 -column 0
 
 pack .topic.headline -expand 1 -fill both
 
-pack .left.center.center_info -side left -expand 1 -fill both
-pack .left.center.center -side left -expand 1 -fill both
+pack .left.center_real.center_real_info -side left -expand 1 -fill both
+pack .left.center_imaginary.center_imaginary_info -side left -expand 1 -fill both
+pack .left.center_real.center_real -side left -expand 1 -fill both
+pack .left.center_imaginary.center_imaginary -side left -expand 1 -fill both
 
 pack .left.iterations.iteration_steps_info -side left -expand 1 -fill both
 pack .left.iterations.iteration_steps -side left -expand 1 -fill both
@@ -357,7 +422,8 @@ pack .buttons.safe -expand 1 -fill both
 pack .buttons.progress -expand 1 -fill both
 
 pack .topic -expand 1 -fill both
-pack .left.center -side left -expand 1 -fill both
+pack .left.center_real -side left -expand 1 -fill both
+pack .left.center_imaginary -side left -expand 1 -fill both
 pack .left.scale -side left -expand 1 -fill both
 pack .left.iterations -side left -expand 1 -fill both
 pack .right.zoom -side left -expand 1 -fill both

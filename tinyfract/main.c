@@ -64,6 +64,13 @@ int main(int argc, char* argv[])
 	char*            center_str;
 	char             command;
 	char*            format_string;
+	char*            div_mul_string;
+	real_number_t    div_mul_arg1;
+	char*            div_mul_arg1_str;
+	int              div_mul_arg2;
+	char*            div_mul_arg2_str;
+	real_number_t    div_mul_erg;
+	char*            scale_format_string;
 
 	const int CENTER_SET=1;
 	const int GEOMETRY_SET=2;
@@ -313,21 +320,24 @@ int main(int argc, char* argv[])
 	mpf_init(scale);
 	mpf_init(Re(new_center_virtual));
 	mpf_init(Im(new_center_virtual));
+	mpf_init(div_mul_arg1);
+	mpf_init(div_mul_erg);
 	
 	/* Get memory for the center and scale string. */
 	scale_str=malloc(sizeof(char)*(prec+1));
 	center_str=malloc(sizeof(char)*(prec*2+2));
 
 	/* Make the format string for multiple precision. */
-	format_string=malloc(sizeof(char)*26+sizeof(long long int)*3+sizeof(ordinal_number_t));
+	format_string=malloc(sizeof(char)*20+sizeof(long long int)*3+sizeof(ordinal_number_t));
+	div_mul_string=malloc(sizeof(real_number_t)+sizeof(long long int)+sizeof(char));
+	scale_format_string=malloc(sizeof(char)*10+sizeof(long long int));
 
-	sprintf(format_string,"new_args %%F.%lldf %%F.%lldf %%F.%lldf %%u\n",prec,prec,prec);
+	sprintf(format_string,"new_args %%F.%lldf %%F.%lldf %%u\n",prec,prec);
+	sprintf(scale_format_string,"scale %%F.%lldf\n",prec);
 
 	/* Start of main loop. */
 	for(;;)
 	{
-		/* Set command not to r. */
-		command='r';
 		#ifdef DEBUG
 		fprintf(stderr,"parameter from stdin:\n");
 		#endif
@@ -346,6 +356,15 @@ int main(int argc, char* argv[])
 					break;
 				case 'i':
 					scanf("%u",&iteration_steps);
+					break;
+				case 'd':
+					gmp_scanf("%s",div_mul_string);
+					div_mul_arg1_str=strtok(div_mul_string,",");
+					div_mul_arg2_str=strtok(NULL,",");
+					mpf_set_str(div_mul_arg1,div_mul_arg1_str,10);
+					sscanf(div_mul_arg2_str,"%d",&div_mul_arg2);
+					mpf_div_ui(div_mul_erg,div_mul_arg1,div_mul_arg2);
+					gmp_printf(scale_format_string,div_mul_erg);
 					break;
 				case 'q':
 					goto exit_func;
@@ -403,7 +422,7 @@ int main(int argc, char* argv[])
 				mpf_set_d(convert,zoom_factor);
 				mpf_div(scale,scale,convert);
 				/* Printf new center, iteration steps and scale */
-				gmp_printf(format_string,Re(center),Im(center),scale,iteration_steps);
+				gmp_printf(format_string,Re(center),Im(center),iteration_steps);
 				fflush(stdout);
 				break;
 			case autozoom_push:
@@ -416,7 +435,7 @@ int main(int argc, char* argv[])
 				VARCOPY(Re(center),Re(new_center_virtual));
 				VARCOPY(Im(center),Im(new_center_virtual));
 				/* Printf new center, iteration steps and scale */
-				gmp_printf(format_string,Re(center),Im(center),scale,iteration_steps);
+				gmp_printf(format_string,Re(center),Im(center),iteration_steps);
 				fflush(stdout);
 				break;
 			case autozoom_zoom_out:
@@ -431,7 +450,7 @@ int main(int argc, char* argv[])
 				mpf_set_d(convert,zoom_factor);
 				mpf_mul(scale,scale,convert);
 				/* Printf new center, iteration steps and scale */
-				gmp_printf(format_string,Re(center),Im(center),scale,iteration_steps);
+				gmp_printf(format_string,Re(center),Im(center),iteration_steps);
 				fflush(stdout);
 				break;
 			case autozoom_do_nothing:
