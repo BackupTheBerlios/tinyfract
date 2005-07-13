@@ -44,6 +44,7 @@ static render_t* constructor(
 	real_number_t    scaling_factor;
 	view_position_t  shift;
 
+	fprintf(stderr,"Hallo\n");
 	/* Check if parameter was given, */
 	if(args==NULL)
 	{
@@ -238,6 +239,7 @@ void render_recurse(render_t* handle)
 	char*             format_string_center_imaginary;
 	char*             format_string_scale;
 
+# if 0
 	/* Print infos like center and scale */
 	format_string_center_real=malloc(sizeof(char)*8+sizeof(long long int));
 	format_string_center_imaginary=malloc(sizeof(char)*8+sizeof(long long int));
@@ -250,6 +252,7 @@ void render_recurse(render_t* handle)
 	gmp_fprintf(stderr,format_string_center_real,Re(handle->center));
 	gmp_fprintf(stderr,format_string_center_imaginary,Im(handle->center));
 	gmp_fprintf(stderr,format_string_scale,handle->scale);
+#endif
 
 	/* Get memory for points. */
 	handle->points=malloc((sizeof(ordinal_number_t))*handle->geometry.width*handle->geometry.height);
@@ -272,7 +275,7 @@ void render_recurse(render_t* handle)
 			/* Execute the fill square function. */
 			fill_square(handle,start_point,square_size);
 		}
-		fprintf(stdout,"progress %d %d\n",x_count+1,x_square);
+		printf("progress %d %d\n",x_count+1,x_square);
 		fflush(stdout);
 		//fpurge(stdout);
 	}

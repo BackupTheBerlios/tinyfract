@@ -329,7 +329,7 @@ int main(int argc, char* argv[])
 
 	/* Make the format string for multiple precision. */
 	format_string=malloc(sizeof(char)*20+sizeof(long long int)*3+sizeof(ordinal_number_t));
-	div_mul_string=malloc(sizeof(real_number_t)+sizeof(long long int)+sizeof(char));
+	div_mul_string=malloc(sizeof(char)+(prec+10));
 	scale_format_string=malloc(sizeof(char)*10+sizeof(long long int));
 
 	sprintf(format_string,"new_args %%F.%lldf %%F.%lldf %%u\n",prec,prec);
@@ -365,11 +365,24 @@ int main(int argc, char* argv[])
 					sscanf(div_mul_arg2_str,"%d",&div_mul_arg2);
 					mpf_div_ui(div_mul_erg,div_mul_arg1,div_mul_arg2);
 					gmp_printf(scale_format_string,div_mul_erg);
+					fflush(stdout);
+					break;
+				case 'm':
+					gmp_scanf("%s",div_mul_string);
+					div_mul_arg1_str=strtok(div_mul_string,",");
+					div_mul_arg2_str=strtok(NULL,",");
+					mpf_set_str(div_mul_arg1,div_mul_arg1_str,10);
+					sscanf(div_mul_arg2_str,"%d",&div_mul_arg2);
+					mpf_mul_ui(div_mul_erg,div_mul_arg1,div_mul_arg2);
+					gmp_printf(scale_format_string,div_mul_erg);
+					fflush(stdout);
 					break;
 				case 'q':
 					goto exit_func;
 					break;
 				case 'r':
+					break;
+				default :
 					break;
 			}
 		}
@@ -378,6 +391,7 @@ int main(int argc, char* argv[])
 		/* Parse options. */
 		parse_options(&center,center_str,&scale,scale_str,prec);
 
+		fprintf(stderr,"Hallo\n");
 		/* Initialize the render facility. */
 		#ifdef DEBUG
 		fprintf(stderr,"Initializing render facility.\n");
@@ -489,9 +503,10 @@ exit_func:
 	(*fractal_facility->facility.fractal.destructor)(fractal);
 
 	/* Free the center and scale strings and the format string. */
-	free(center_str);
+//	free(center_str);
 	free(scale_str);
 	free(format_string);
+	free(div_mul_string);
 
 	/* Free the multiple precision variables. */
 	mpf_clear(Re(center));
