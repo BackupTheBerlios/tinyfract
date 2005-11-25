@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../common.h"
 #include "../plugin.h"
 
 #define MAX_COLORS 65536
@@ -13,8 +12,8 @@
 typedef struct
 {
 	float y;
-	float u;
-	float v;
+	float cb;
+	float cr;
 } yuv_t;
 
 typedef struct
@@ -67,25 +66,22 @@ float B(float H,float S,float Br)
 /* Constructor and destructor for mpeg output. */
 static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 {
-	mpeg_t* context;
-	AVCodec* codec
-	int    i;
-	int    outbuf_size;
-	int    size;
-	float  H;
-	float  S;
-	float  Br;
-
-	char   des[3];
-	int    mod[3];
-	float  thres[3];
-
+	mpeg_t*  context;
+	AVCodec* codec;
+	int      i;
+	int      outbuf_size;
+	int      size;
+	float    H;
+	float    S;
+	float    Br;
+	char     des[3];
+	int      mod[3];
+	float    thres[3];
 	uint8_t* outbuf;
 	uint8_t* picture_buf;
-
-	int   iteration_steps;
-	char* output_args;
-	char* name;
+	int      iteration_steps;
+	char*    output_args;
+	char*    name;
 	
 
 	/* Get memory for the output context. */
@@ -167,10 +163,11 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 					exit(EXIT_FAILURE);
 			}	
 		}
-		
-		context->colors[i].y=round(0.256788*R(H,S,Br)+0.504129*G(H,S,Br)+0.097906*B(H,S,Br))+16;
-		context->colors[i].u=round(-0.148223*R(H,S,Br)-0.290993*G(H,S,Br)+0.439216*B(H,S,Br))+128;
-		context->colors[i].v=round(0.439216*R(H,S,Br)-0.367788*G(H,S,Br)-0.071427*B(H,S,Br))+128;
+
+		/* Now we write the color information, the RGB Value is translatet into YCbCr. */
+		context->colors[i].y=0.299*(R(H,S,Br)/255)+0.587*(G(H,S,Br)/255)+0.114*(B(H,S,Br)/255);
+		context->colors[i].cb=(((B(H,S,Br)/255)-context->colors[i].y)/1.772)+0.5;
+		context->colors[i].cr=(((R(H,S,Br)/255)-context->colors[i].y)/1.402)+0.5;
 	}
 
 	/* Find the mpeg1 video encoder. */
@@ -252,7 +249,11 @@ void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 	for(x=position.x;x<=dimension.width+position.x;x++)
 	{
 		for(y=position.y;y<=dimension.height+position.y;y++)
-			gdImageSetPixel(handle->im,x,y,handle->colors[value]);
+		{
+			handle->picture->data[0][y*picture->linesize[0]+x]=handle->colors[value].y;
+			handle->picture->data[1][y*picture->linesize[1]+x]=handle->colors[value].cb;
+			handle->picture->data[2][y*picture->linesize[2]+x]=handle->colors[value].cr;
+		}
 	}
 }
 
@@ -260,7 +261,10 @@ void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 void put_pixel_mpeg(mpeg_t* handle, const view_position_t position, const pixel_value value)
 {
 	/* Put a pixel into the image. */
-	gdImageSetPixel(handle->im,position.x,position.y,handle->colors[value]);
+	handle->picture->data[0][position->y*picture->linesize[0]+position->x]=handle->colors[value].y;
+	handle->picture->data[1][position->y*picture->linesize[1]+position->x]=handle->colors[value].cb;
+	handle->picture->data[2][position->y*picture->linesize[2]+position->x]=handle->colors[value].cr;
+	
 }
 
 /* Safe the image */
