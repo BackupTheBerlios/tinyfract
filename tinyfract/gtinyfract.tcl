@@ -8,13 +8,12 @@ package require Iwidgets
 wm title . "Tinyfract GUI"
 
 ## Create safe interpreter
-
 set parser [ interp create -safe ]
 
 ## Standard parameters
 set fractal mandelbrot
 set geometry "[ expr [ winfo screenwidth . ] * 2 / 3 ]x[ expr [ winfo screenheight . ] * 2 / 3 ]"
-set plugin_path "$env(HOME)/cvs/tinyfract/plugins"
+set plugin_path "$env(PWD)/plugins"
 set output_method x11
 set output_parameter "H10,.5S10,.5B10,.5"
 set render_method recurse
@@ -26,10 +25,13 @@ set scale_test 0
 set center_real 0
 set center_imaginary 0
 set iteration_steps "100"
-set fractal_args ""
+set fractal_paramter ""
 set zoom_faktor 10
 
 set TINYFRACT_FD 0
+
+## Movie list
+set movie_list [ list "" ]
 
 ## Set the geometry for .
 wm geometry . [ winfo screenwidth . ]x[winfo screenheight . ]
@@ -68,27 +70,101 @@ iwidgets::extfileselectiondialog .file \
 	-modality application
 .file deactivate
 
-## Functionds
+## Record a fractal movie
+## Volatile datas
+set rec_test 0
+set movie_flag 0
+
+## Slave interpreter for recording
+set rec_interp [ interp create -safe ]
+
+proc define_rec { name value } \
+{
+	global rec_test
+	if { $name != "center_real" && $name != "center_imaginary" && $name != "scale" } { return }
+
+	puts $rec_test
+	if { $rec_test == 0 } \
+	{
+		set name [ list $name 1 ]
+		set name [ join $name "" ]
+		puts $name
+		global $name
+		set $name $value
+	} else \
+	{
+		set name [ list $name 2 ]
+		set name [ join $name "" ]
+		puts $name
+		global $name
+		set $name $value
+	}
+}
+$rec_interp alias define define_rec
+
+## Dialog for recording a fractal movie
+toplevel .record
+iwidgets::labeledwidget .record.first -labeltext "First picture"
+set win1 [ .record.first childsite ]
+entry $win1.entry 
+button $win1.button -text "Durchsuchen" -command { $win1.entry insert 0 [ tk_getOpenFile ] }
+
+iwidgets::labeledwidget .record.second -labeltext "Second picture"
+set win2 [ .record.second childsite ]
+entry $win2.entry 
+button $win2.button -text "Durchsuchen" -command { $win2.entry insert 0 [ tk_getOpenFile ] }
+
+iwidgets::labeledwidget .record.third -labeltext "Movie Name:"
+set win3 [ .record.third childsite ]
+entry $win3.entry
+
+iwidgets::labeledwidget .record.forth -labeltext "Movie time:"
+set win4 [ .record.forth childsite ]
+iwidgets::spintime $win4.time \
+	-orient horizontal
+
+button .record.record -text "Record" -command { record_movie $TINYFRACT_FD [ open [ $win1.entry get ] r ] [ open [ $win2.entry get ] r ] [ $win3.entry get ] }
+button .record.cancel -text "Cancel" -command "wm withdraw .record"
+
+wm withdraw .record
+
+## Dialog for displaying the progress of the movie
+toplevel .movie_progress
+iwidgets::feedback .movie_progress.progress \
+	-labeltext "Progress from movie"
+button .movie_progress.cancel \
+	-text "Cancel" \
+	-command "puts exit"
+wm withdraw .movie_progress
+
+
+## Functions
 ## Function for inerting options
 proc insert {} \
 {
-	global fractal fractal_args plugin_path output_method output_parameter render_method render_parameter precision center_real center_imaginary scale iteration_steps
+	global fractal_paramter plugin_path plugin_path_win output_parameter render_parameter geometry precision center_real center_imaginary scale iteration_steps fractal_parameter_win plugin_path_win output_parameter_win render_parameter_win geometry_win precision_win
 
-	.start_params.fractal_parameter.params delete 0 end
-	.start_params.output_parameter.params delete 0 end
-	.start_params.render_parameter.params delete 0 end
-	.start_params.prec.params delete 0 end
+	## First rendering insert
+	$fractal_parameter_win.entry delete 0 end
+	$output_parameter_win.entry delete 0 end
+	$render_parameter_win.entry delete 0 end
+	$geometry_win.entry delete 0 end
+	$plugin_path_win.entry delete 0 end
+	$precision_win.entry delete 0 end
+	
+	$fractal_parameter_win.entry insert 0 $fractal_paramter
+	$output_parameter_win.entry insert 0 $output_parameter
+	$render_parameter_win.entry insert 0 $render_parameter
+	$geometry_win.entry insert 0 $geometry
+	$plugin_path_win.entry insert 0 $plugin_path
+	$precision_win.entry insert 0 $precision
 
+	## Main entries insert
 	.left.center_real.center_real delete 0 end
 	.left.center_imaginary.center_imaginary delete 0 end
 	.left.iterations.iteration_steps delete 0 end
 	.left.scale.scale delete 0 end
 	
-	.start_params.fractal_parameter.params insert 0 $fractal_args
-	.start_params.output_parameter.params insert 0 $output_parameter
-	.start_params.render_parameter.params insert 0 $render_parameter
-	.start_params.prec.params insert 0 $precision
-
 	.left.center_real.center_real insert 0 $center_real
 	.left.center_imaginary.center_imaginary insert 0 $center_imaginary
 	.left.iterations.iteration_steps insert 0 $iteration_steps
@@ -107,40 +183,144 @@ proc define { name value } \
 }
 $parser alias define define
 
+proc add_movie_list { center_real center_imaginary scale steps } \
+{
+	global movie_list movie_flag
+
+	lappend movie_list "$center_real $center_imaginary $scale"
+	if { [ llength $movie_list ] == $steps } { set movie_flag 1 }
+}
+$parser alias add_movie_list add_movie_list
+
 ## Function for loading
 proc load_options {} \
 {
-	global parser
+	global parser fractal output_method render_method
 
 	set path [ tk_getOpenFile ]
 	set path_fd [ open $path "r" ]
 
 	for {set line [ gets $path_fd ]} {![eof $path_fd]} {set line [ gets $path_fd ]} { $parser eval $line }
+	update
 	insert
 }
 
 ## Function for saving
 proc safe_options {} \
 {
-	global fractal plugin_path output_method output_parameter render_method render_parameter precision fractal_args
+	global fractal plugin_path output_method output_parameter render_method render_parameter precision fractal_paramter
 
-	set path [ tk_getOpenFile ]
-	set path_fd [ open $path "r+" ]
+	set path [ tk_getSaveFile ]
+	if { $path != "" } \
+	{
+		set path_fd [ open $path "w+" ]
+	} else { return }
 	
 	set center_real [ .left.center_real.center_real get ]
 	set center_imaginary [ .left.center_imaginary.center_imaginary get ]
 	set scale [ .left.scale.scale get ]
 	set iteration_steps [ .left.iterations.iteration_steps get ]
 
-	puts $path_fd "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_args {$fractal_args}\n"
+	puts "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_paramter {$fractal_paramter}\n"
+	puts $path_fd "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_paramter {$fractal_paramter}\n"
+	close $path_fd
+}
+
+## Function which evals options
+proc eventdata { TINYFRACT_FD } \
+{
+	global parser
+	if {![ eof $TINYFRACT_FD ] } \
+	{
+		set line [ gets $TINYFRACT_FD ]
+		puts "Command is: $line"
+		if { [ catch [ $parser eval $line ] result ] != 0 } { puts "While executing ($line) this error occured:($result)" }	
+	}
+}
+
+## Function for saving as a png
+proc safe_png {} \
+{
+	global ready_flag fractal geometry plugin_path output_method output_parameter render_method render_parameter precision fractal_paramter parser
+
+	set ready_flag 0
+
+	set path [ tk_getSaveFile ]
+	if { $path == "" } { return }
+	
+	set center_real [ .left.center_real.center_real get ]
+	set center_imaginary [ .left.center_imaginary.center_imaginary get ]
+	set scale [ .left.scale.scale get ]
+	set iteration_steps [ .left.iterations.iteration_steps get ]
+
+	if { $fractal_paramter == "" } \
+	{
+		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision"
+		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision" "r+" ]
+		fileevent $png readable "eventdata $png"
+	} else \
+	{
+		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter -r$render_method -R$render_parameter -p$precision -F$fractal_paramter"
+		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter -r$render_method -R$render_parameter -p$precision -F$fractal_paramter" "r+" ]
+		fileevent $png readable "eventdata $png"
+	}
+
+	puts $png "p$center_real,$center_imaginary\ns$scale\ni$iteration_steps\nr\n"
+	flush $png
+	tkwait variable ready_flag
+	catch { close $png }
+}
+
+## Record a fractal movie
+proc record_movie { TINYFRACT_FD first_fd second_fd name } \
+{
+	global win4 rec_interp rec_test center_real1 center_imaginary1 scale1 center_real2 center_imaginary2 scale2 movie_list movie_flag ready_flag
+
+	set time [ $win4.time get ]
+	set time [ split $time ":" ]
+
+	set steps [ expr ( [ lindex $time 0 ] * 60 * 60 * 24 ) + ( [ lindex $time 1 ] * 60 * 24 ) + ( [ lindex $time 2 ] *24 ) ]
+
+	set rec_test 0
+	for { set line [ gets $first_fd ] } { [ eof $first_fd ] != 1 } { set line [ gets $first_fd ] } { $rec_interp eval $line }
+	set rec_test 1
+	for { set line [ gets $second_fd ] } { [ eof $second_fd ] != 1 } { set line [ gets $second_fd ] } { $rec_interp eval $line }
+
+	set movie_list ""
+	set movie_flag 0
+	puts "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
+	puts $TINYFRACT_FD "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
+	flush $TINYFRACT_FD
+	tkwait variable movie_flag
+	puts $movie_list
+
+	wm deiconify .movie_progress
+	.movie_progress.progress configure -steps $steps
+	.movie_progress.progress reset
+	for { set i 0 } { $i < [ llength $movie_list ] } { incr i } \
+	{
+		set ready_flag 0
+		puts $TINYFRACT_FD "p[ lindex [ lindex $movie_list $i ] 0 ],[ lindex [ lindex $movie_list $i ] 1 ]\ns[ lindex [ lindex $movie_list $i ] 2 ]\nr\n"
+		flush $TINYFRACT_FD
+		tkwait variable ready_flag
+		.movie_progress.progress step
+		insert
+	}
+	wm withdraw .movie_progress
 }
 
 ## Function for making a progress bar
 proc progress_cmd { actual total } \
 {
+	global ready_flag
+
 	if { $actual == 1 } \
 	{
 		.buttons.progress reset
+	}
+	if { $actual == $total } \
+	{
+		set ready_flag 1
 	}
 
 	.buttons.progress configure -steps $total
@@ -172,20 +352,9 @@ proc scale { new_scale } \
 	.left.scale.scale insert 0 $new_scale
 	puts "New scale is: $scale"
 	set scale_test "1"
-	return
 }
 $parser alias scale scale
 
-## Function which evals options
-proc eventdata { TINYFRACT_FD } \
-{
-	global parser
-	if {![ eof $TINYFRACT_FD ] } \
-	{
-		set line [ gets $TINYFRACT_FD ]
-		if { [ catch [ $parser eval $line ] result ] != 0 } { puts "While executing ($line) this error occured:($result)" }	
-	}
-}
 
 ## An error occured
 proc error_message { message yes no} \
@@ -205,7 +374,9 @@ proc error_message { message yes no} \
 ## Start rendering function
 proc render { TINYFRACT_FD mode } \
 {
-	global zoom_faktor scale_test
+	global scale_test
+
+	set zoom_faktor [ .right.zoom.faktor get ]
 
 
 	if { $TINYFRACT_FD == 0 } \
@@ -213,7 +384,6 @@ proc render { TINYFRACT_FD mode } \
 		puts "Error: No Pipe"
 		exit
 	}
-	puts "I am living $scale_test"
 
 	if { $mode == 1 } \
 	{
@@ -245,12 +415,13 @@ proc render { TINYFRACT_FD mode } \
 ## Function for first rendering
 proc first_rendering {} \
 {
-	global test TINYFRACT_FD geometry fractal plugin_path output_method render_method
+	global test TINYFRACT_FD geometry fractal fractal_paramter plugin_path output_method output_parameter render_method render_parameter precision geometry fractal_parameter_win output_parameter_win render_parameter_win precision_win geometry_win
 
-	set fractal_parameter [ .start_params.fractal_parameter.params get ]
-	set output_parameter [ .start_params.output_parameter.params get ]
-	set render_parameter [ .start_params.render_parameter.params get ]
-	set precision [ .start_params.prec.params get ]
+	set fractal_paramter [ $fractal_parameter_win.entry get ]
+	set output_parameter [ $output_parameter_win.entry get ]
+	set render_parameter [ $render_parameter_win.entry get ]
+	set precision [ $precision_win.entry get ]
+	set geometry [ $geometry_win.entry get ]
 	
 	if { $precision == "" } \
 	{
@@ -290,14 +461,14 @@ proc first_rendering {} \
 	}
 
 	## Call tinyfract with standard parameters(fractal parameters are only used if necessary).
-	if { $fractal == "mandelbrot" } \
+	if { $fractal_paramter == "" } \
 	{
 		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
 		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision"
 	} else \
 	{
-		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -F$fractal_parameter -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
-		puts "./tinyfract -f$fractal -F$fractal_parameter -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision"
+		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -F$fractal_paramter -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
+		puts "./tinyfract -f$fractal -F$fractal_paramter -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision"
 	}
 
 	fileevent $TINYFRACT_FD readable { eventdata $TINYFRACT_FD }
@@ -316,74 +487,62 @@ toplevel .start_params
 
 
 ## Build necessary entry and information fields
-## Helper frames
-frame .start_params.fractal
-frame .start_params.fractal_parameter
-frame .start_params.plugin_path
-frame .start_params.output_method
-frame .start_params.output_parameter
-frame .start_params.render_method
-frame .start_params.render_parameter
-frame .start_params.prec
-
-## Info labels
-label .start_params.fractal.info -text "Fractal type:"
-label .start_params.fractal_parameter.info -text "Fractal parameter:"
-label .start_params.plugin_path.info -text "Plugin path:"
-label .start_params.output_method.info -text "Output method:"
-label .start_params.output_parameter.info -text "Output parameter:"
-label .start_params.render_method.info -text "Render method:"
-label .start_params.render_parameter.info -text "Render parameter:"
-label .start_params.prec.info -text "Precision:"
-
-## Entries or Menubuttons for prameters insert
-menubutton .start_params.fractal.params \
-	-text $fractal \
-	-activebackground darkgrey
-entry .start_params.fractal_parameter.params
-label .start_params.plugin_path.params \
-	-text $plugin_path \
-	-background red
-menubutton .start_params.output_method.params \
-	-text $output_method \
-	-activebackground darkgrey
-entry .start_params.output_parameter.params
-menubutton .start_params.render_method.params \
-	-text $render_method \
-	-activebackground darkgrey
-entry .start_params.render_parameter.params
-entry .start_params.prec.params
-
-
-## Create menues and other volataile widgets
-## Fractal type
-menu .start_params.fractal.params.menu
-.start_params.fractal.params.menu add command -label "Bitte Wählen" -command { .start_params.fractal.params configure -text "Bitte wählen" ; set fractal "" }
-.start_params.fractal.params.menu add command -label "Mandelbrot" -command { .start_params.fractal.params configure -text "Mandelbrot" ; set fractal mandelbrot }
-.start_params.fractal.params.menu add command -label "Julia" -command { .start_params.fractal.params configure -text "Julia" ; set fractal julia }
-.start_params.fractal.params.menu add command -label "Lambda" -command { .start_params.fractal.params configure -text "Lambda" ; set fractal lambda }
-.start_params.fractal.params configure -menu ".start_params.fractal.params.menu"
-
-## Plugin Path
-button .start_params.plugin_path.search \
-	-text "Durchsuchen" \
-	-command { if { [ .file activate ] } { set plugin_path [ .file get ] ; .start_params.plugin_path.params configure -text $plugin_path } }
-
-## Output method
-menu .start_params.output_method.params.menu
-.start_params.output_method.params.menu add command -label "Bitte Wählen" -command { .start_params.output_method.params configure -text "Bitte wählen" ; set output_method "" }
-.start_params.output_method.params.menu add command -label "X11" -command { .start_params.output_method.params configure -text "x11" ; set output_method mandelbrot }
-.start_params.output_method.params.menu add command -label "aa" -command { .start_params.output_method.params configure -text "aa" ; set output_method julia }
-.start_params.output_method.params configure -menu ".start_params.output_method.params.menu"
-
-## Render method
-menu .start_params.render_method.params.menu
-.start_params.render_method.params.menu add command -label "Bitte Wählen" -command { .start_params.render_method.params configure -text "Bitte wählen" ; set render_method "" }
-.start_params.render_method.params.menu add command -label "Recurse" -command { .start_params.render_method.params configure -text "Recurse" ; set render_method recurse }
-.start_params.render_method.params.menu add command -label "dumb" -command { .start_params.render_method.params configure -text "dumb" ; set render_method dumb }
-.start_params.render_method.params.menu add command -label "pix" -command { .start_params.render_method.params configure -text "pix" ; set render_method pix }
-.start_params.render_method.params configure -menu ".start_params.render_method.params.menu"
-
+## File selection dialog
+iwidgets::extfileselectiondialog .efsd -modality application
+## Params insert fields
+iwidgets::combobox .start_params.fractal \
+	-labeltext "Fraktal type:" \
+	-labelpos w \
+	-selectioncommand { set fractal [ .start_params.fractal getcurselection ] }
+.start_params.fractal insert list end mandelbrot julia lambda
+.start_params.fractal selection set $fractal
+iwidgets::labeledwidget .start_params.fractal_paramter \
+	-labeltext "Fractal parameter:" \
+	-labelpos w
+set fractal_parameter_win [ .start_params.fractal_paramter childsite ]
+entry $fractal_parameter_win.entry
+iwidgets::combobox .start_params.output_method \
+	-labeltext "Output method:" \
+	-labelpos w \
+	-selectioncommand { set output_method [ .start_params.output_method getcurselection ] }
+.start_params.output_method insert list end x11 aa
+.start_params.output_method selection set $output_method
+iwidgets::labeledwidget .start_params.output_parameter \
+	-labeltext "Output parameter:" \
+	-labelpos w
+set output_parameter_win [ .start_params.output_parameter childsite ]
+entry $output_parameter_win.entry
+iwidgets::combobox .start_params.render_method \
+	-labeltext "Render method:" \
+	-labelpos w \
+	-selectioncommand { set render_method [ .start_params.render_method getcurselection ] }
+.start_params.render_method insert list end recurse dumb pix
+.start_params.render_method selection set $render_method
+iwidgets::labeledwidget .start_params.render_parameter \
+	-labeltext "Render parameter:" \
+	-labelpos w
+set render_parameter_win [ .start_params.render_parameter childsite ]
+entry $render_parameter_win.entry
+iwidgets::labeledwidget .start_params.geometry \
+	-labeltext "Geometry (your geometry: [ winfo screenwidth . ]x[winfo screenheight . ]):" \
+	-labelpos w
+set geometry_win [ .start_params.geometry childsite ]
+entry $geometry_win.entry
+iwidgets::labeledwidget .start_params.plugin_path \
+	-labeltext "Plugin path:" \
+	-labelpos w
+set plugin_path_win [ .start_params.plugin_path childsite ]
+entry $plugin_path_win.entry
+button $plugin_path_win.button \
+	-text "Files" \
+	-command {
+		set plugin_path [ tk_chooseDirectory ] ; insert
+	}
+iwidgets::labeledwidget .start_params.precision \
+	-labeltext "Precision:" \
+	-labelpos w
+set precision_win [ .start_params.precision childsite ]
+entry $precision_win.entry
 
 ## Build Buttons
 frame .start_params.buttons
@@ -397,7 +556,6 @@ button .start_params.buttons.cancel \
 button .start_params.buttons.load_parameter \
 	-text "Load" \
 	-command "load_options"
-
 
 
 ## Make labels and info fields only for center, scale and iteration steps
@@ -436,29 +594,39 @@ insert
 iwidgets::feedback .buttons.progress \
 	-labeltext "Progress"
 
-## Build Safe and Cancel button
+## Build Safe, record and Cancel button
 button .buttons.cancel \
 	-text "Cancel" \
-	-command { puts $TINYFRACT_FD q ; flush $TINYFRACT_FD ; close $TINYFRACT_FD ; exit }
+	-command { puts $TINYFRACT_FD q ; flush $TINYFRACT_FD ; catch { close $TINYFRACT_FD } ; exit }
 button .buttons.safe \
-	-text safe \
+	-text Safe \
 	-command "safe_options"
+button .buttons.safe_png \
+	-text "Safe as png" \
+	-command safe_png
+button .buttons.record_movie \
+	-text "Record fractal movie" \
+	-command "wm deiconify .record"
 
 ## Build Buttons for auto zooming
-label .right.zoom.faktor \
-	-text $zoom_faktor
+iwidgets::spinint .right.zoom.faktor \
+	-labeltext "Zoom Faktor" \
+	-range { 0 1000 }
+.right.zoom.faktor delete 0 end
+.right.zoom.faktor insert 0 $zoom_faktor
 button .right.zoom.zoom_in \
 	-text "+" \
 	-command { render $TINYFRACT_FD 1 }
+button .right.zoom.move \
+	-text "<-->" \
+	-command { render $TINYFRACT_FD 3 }
 button .right.zoom.zoom_out \
 	-text "-" \
 	-command { render $TINYFRACT_FD 0 }
 
 
 
-focus .start_params.fractal.params
-
-
+## Error dialog
 toplevel .error
 label .error.bitmap -bitmap error
 label .error.message -text "test"
@@ -470,7 +638,7 @@ bind .error.return <ButtonPress> "set test 5"
 
 wm withdraw .error
 
-
+## Pack all widgets
 grid .error.message -row 0 -column 1 -sticky nsew
 grid .error.bitmap -row 0 -column 0 -sticky nsew
 grid .error.exit -row 1 -column 1 -sticky nsew
@@ -491,10 +659,13 @@ pack .left.scale.scale -side left -expand 1 -fill both
 
 pack .right.zoom.faktor -expand 1 -fill both
 pack .right.zoom.zoom_in -side left -expand 1 -fill both
+pack .right.zoom.move -side left -expand 1 -fill both
 pack .right.zoom.zoom_out -side left -expand 1 -fill both
 
-pack .buttons.cancel -expand 1 -fill both
 pack .buttons.safe -expand 1 -fill both
+pack .buttons.safe_png -expand 1 -fill both
+pack .buttons.record_movie -expand 1 -fill both
+pack .buttons.cancel -expand 1 -fill both
 pack .buttons.progress -expand 1 -fill both
 
 pack .topic -expand 1 -fill both
@@ -508,39 +679,41 @@ pack .buttons -side bottom -expand 1 -fill both
 pack .left -side left -expand 1 -fill both
 pack .right -side right -expand 1 -fill both
 
-pack .start_params.fractal.info -side left -fill both -expand 1
-pack .start_params.fractal_parameter.info -side left -fill both -expand 1
-pack .start_params.plugin_path.info -side left -fill both -expand 1
-pack .start_params.output_method.info -side left -fill both -expand 1
-pack .start_params.output_parameter.info -side left -fill both -expand 1
-pack .start_params.render_method.info -side left -fill both -expand 1
-pack .start_params.render_parameter.info -side left -fil both -expand 1
-pack .start_params.prec.info -side left -fill both -expand 1
-
-pack .start_params.fractal.params -side left -fill both -expand 1
-pack .start_params.fractal_parameter.params -side left -fill both -expand 1
-pack .start_params.plugin_path.params -side left -fill both -expand 1
-pack .start_params.plugin_path.search -side left -fill both -expand 1
-pack .start_params.output_method.params -side left -fill both -expand 1
-pack .start_params.output_parameter.params -side left -fill both -expand 1
-pack .start_params.render_method.params -side left -fill both -expand 1
-pack .start_params.render_parameter.params -side left -fill both -expand 1
-pack .start_params.prec.params -side left -fill both -expand 1
+pack .start_params.fractal -fill both -expand 1
+pack .start_params.fractal_paramter -fill both -expand 1
+pack $fractal_parameter_win.entry -side left -fill both -expand 1
+pack .start_params.output_method -fill both -expand 1
+pack .start_params.output_parameter -fill both -expand 1
+pack $output_parameter_win.entry -side left -fill both -expand 1
+pack .start_params.render_method  -fill both -expand 1
+pack .start_params.render_parameter -fill both -expand 1
+pack $render_parameter_win.entry -side left -fill both -expand 1
+pack .start_params.geometry -fill both -expand 1
+pack $geometry_win.entry -side left -fill both -expand 1
+pack .start_params.plugin_path -fill both -expand 1
+pack $plugin_path_win.entry -side left -fill both -expand 1
+pack $plugin_path_win.button -side left -fill both -expand 1
+pack .start_params.precision -fill both -expand 1
+pack $precision_win.entry -side left -fill both -expand 1
 
 pack .start_params.buttons.start_tinyfract -side left -fill both -expand 1
 pack .start_params.buttons.cancel -side left -fill both -expand 1
 pack .start_params.buttons.load_parameter -side left -fill both -expand 1
 
-
-pack .start_params.fractal -expand 1 -fill both
-pack .start_params.fractal_parameter -expand 1 -fill both
-pack .start_params.plugin_path -expand 1 -fill both
-pack .start_params.output_method -expand 1 -fill both
-pack .start_params.output_parameter -expand 1 -fill both
-pack .start_params.render_method -expand 1 -fill both
-pack .start_params.render_parameter -expand 1 -fill both
-pack .start_params.prec -expand 1 -fill both
-
 pack .start_params.buttons -expand 1 -fill both
 
+pack .record.first -expand 1 -fill both
+pack .record.second -expand 1 -fill both
+pack .record.third -expand 1 -fill both
+pack .record.forth -expand 1 -fill both
+pack $win1.entry -expand 1 -fill both
+pack $win1.button -expand 1 -fill both
+pack $win2.entry -expand 1 -fill both
+pack $win2.button -expand 1 -fill both
+pack $win3.entry -expand 1 -fill both
+pack $win4.time -expand 1 -fill both
+pack .record.record -expand 1 -fill both
+pack .record.cancel -expand 1 -fill both
 
+pack .movie_progress.progress -expand 1 -fill both
+pack .movie_progress.cancel -expand 1 -fill both

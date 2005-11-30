@@ -211,7 +211,6 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 
 	/* Get window size. */
 	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
-	
 	for(;;)
 	{
 		/* Wait for an event. */
@@ -230,21 +229,13 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 				switch (position->type=event.xbutton.button)
 				{
 					case 1:
-					case 4:
-						position->x=event.xbutton.x;
-						position->y=event.xbutton.y;
-						position->type=autozoom_zoom_in;
-						goto exit_func;
+					case 2:
 					case 3:
+					case 4:
 					case 5:
 						position->x=event.xbutton.x;
 						position->y=event.xbutton.y;
-						position->type=autozoom_zoom_out;
-						goto exit_func;
-					case 2:
-						position->x=event.xbutton.x;
-						position->y=event.xbutton.y;
-						position->type=autozoom_push;
+						position->type=autozoom_set_center;
 						goto exit_func;
 					default:
 						break;
@@ -261,9 +252,8 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 				break;	
 			default:
 				break;
-		}
+		}	
 	}
-
 exit_func: 
 	return;
 }

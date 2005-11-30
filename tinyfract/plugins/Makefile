@@ -1,20 +1,16 @@
 .PHONY: all clean
 
-CC=gcc-3.4
+CC=gcc
 CFLAGS=-O3 -fPIC -DDEBUG
-LD=gcc-3.4
+LD=gcc
 LDFLAGS=
 RM=/bin/rm
 
 
-#all: fractal_mandelbrot.so output_x11.so output_aa.so render_recurse.so render_dumb.so render_record_tinyfract_fractalmovie.so fractal_lambda.so
-all: fractal_mandelbrot.so output_x11.so output_aa.so render_recurse.so render_pix.so render_dumb.so fractal_lambda.so
+all: fractal_mandelbrot.so fractal_lambda.so output_x11.so output_aa.so render_recurse.so render_pix.so render_dumb.so
 
 clean:
 	$(RM) -f *.o *.so
-
-test_tinyfract: test_main.c ../plugin_loader.c
-	$(CC) $(CFLAGS) -ldl -lgmp -o $@ $^
 
 output_aa.o: output_aa.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<

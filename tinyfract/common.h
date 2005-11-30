@@ -44,10 +44,8 @@ typedef unsigned int pixel_value;
 
 typedef enum
 {
-	autozoom_zoom_in,
-	autozoom_zoom_out,
+	autozoom_set_center,
 	autozoom_quit,
-	autozoom_push,
 	autozoom_wait,
 	autozoom_do_nothing
 } autozoom_event_enum_t;

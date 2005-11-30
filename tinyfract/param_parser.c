@@ -91,6 +91,132 @@ int make_vinumber(complex_number_t* virtual_position,view_position_t real_positi
 	return 0;
 }
 
+int calc_movie_params(char* params,long long int prec)
+{
+	/* Volatile Datas. */
+	real_number_t center1_real;
+	real_number_t center1_imaginary;
+	real_number_t center2_real;
+	real_number_t center2_imaginary;
+	real_number_t scale1;
+	real_number_t scale2;
+	real_number_t center_real_shift;
+	real_number_t center_imaginary_shift;
+	real_number_t scale_shift;
+	real_number_t calc_help;
+	real_number_t new_center_real;
+	real_number_t new_center_imaginary;
+	real_number_t new_scale;
+	char*         help;
+	char*         format_string;
+	char*         params_tok;
+	unsigned int  steps;
+	unsigned int  i;
+
+	/* Set default precision and initialize the vars. */
+	mpf_set_default_prec(sizeof(char)*prec);
+
+	mpf_init(center1_real);
+	mpf_init(center1_imaginary);
+	mpf_init(center2_real);
+	mpf_init(center2_imaginary);
+	mpf_init(scale1);
+	mpf_init(scale2);
+	mpf_init(center_real_shift);
+	mpf_init(center_imaginary_shift);
+	mpf_init(scale_shift);
+	mpf_init(calc_help);
+	mpf_init(new_center_real);
+	mpf_init(new_center_imaginary);
+	mpf_init(new_scale);
+
+	/* Copy the main string into the tok string. */
+	params_tok=malloc(sizeof(params));
+	strcpy(params_tok,params);
+
+	/* Split the main string and set the vars. */
+	help=strtok(params_tok,",");
+	mpf_set_str(center1_real,help,10);
+	help=strtok(NULL,",");
+	mpf_set_str(center1_imaginary,help,10);
+	help=strtok(NULL,",");
+	mpf_set_str(center2_real,help,10);
+	help=strtok(NULL,",");
+	mpf_set_str(center2_imaginary,help,10);
+	help=strtok(NULL,",");
+	mpf_set_str(scale1,help,10);
+	help=strtok(NULL,",");
+	mpf_set_str(scale2,help,10);
+	help=strtok(NULL,",");
+	sscanf(help,"%d",&steps);
+
+	#ifdef DEBUG
+//	gmp_printf("Re Center1: %F.100f\n",center1_real);
+//	gmp_printf("Im Center1: %F.100f\n",center1_imaginary);
+//	gmp_printf("Re Center2: %F.100f\n",center2_real);
+//	gmp_printf("Im Center2: %F.100f\n",center2_imaginary);
+//	gmp_printf("Scale1: %F.100f\n",scale1);
+//	gmp_printf("Scale2: %F.100f\n",scale2);
+	fprintf(stderr,"Steps: %d\n",steps);
+	#endif
+
+	/* Get the difference between the single movie fraktals and calculate the shift. */
+	/* Center real shift. */
+	mpf_sub(calc_help,center2_real,center1_real);
+	mpf_div_ui(center_real_shift,calc_help,steps);
+
+	/* Center imaginary shift. */
+	mpf_sub(calc_help,center2_imaginary,center1_imaginary);
+	mpf_div_ui(center_imaginary_shift,calc_help,steps);
+
+	/* Scale shift. */
+	mpf_sub(calc_help,scale2,scale1);
+	mpf_div_ui(scale_shift,calc_help,steps);
+
+	/* Set the format string. */
+	format_string=malloc(sizeof(char)*32+sizeof(long long int)*3);
+	sprintf(format_string,"add_movie_list %%F.%lldf %%F.%lldf %%F.%lldf %%d\n",prec,prec,prec);
+
+	/* Print the new centers and scales. */
+	for(i=0;i<=steps;i++)
+	{
+		/* New center real. */
+		mpf_mul_ui(new_center_real,center_real_shift,i);
+		mpf_add(new_center_real,center1_real,new_center_real);
+
+		/* New center imaginary. */
+		mpf_mul_ui(new_center_imaginary,center_imaginary_shift,i);
+		mpf_add(new_center_imaginary,new_center_imaginary,center1_imaginary);
+
+		/* New scale. */
+		mpf_mul_ui(new_scale,scale_shift,i);
+		mpf_add(new_scale,new_scale,scale1);
+
+		gmp_printf(format_string,new_center_real,new_center_imaginary,new_scale,steps);
+		fflush(stdout);
+	}
+
+	/* Clear the multiple precision vars. */
+	mpf_clear(center1_real);
+	mpf_clear(center1_imaginary);
+	mpf_clear(center2_real);
+
+	mpf_clear(center2_imaginary);
+	fprintf(stderr,"Hallo\n");
+
+	mpf_clear(scale1);
+	mpf_clear(scale2);
+	mpf_clear(center_real_shift);
+	mpf_clear(center_imaginary_shift);
+	mpf_clear(scale_shift);
+	mpf_clear(new_center_real);
+	mpf_clear(new_center_imaginary);
+	mpf_clear(new_scale);
+	mpf_clear(calc_help);
+
+	return 0;
+}
+
 int render_and_flush(
 		const plugin_facility_t* render_facility,
 		complex_number_t         render_center,

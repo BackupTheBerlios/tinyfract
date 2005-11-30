@@ -10,6 +10,8 @@ int parse_options(complex_number_t* center,char* center_source,real_number_t* sc
 
 int make_vinumber(complex_number_t* virtual_position,view_position_t real_position,view_dimension_t geometry,real_number_t scale,complex_number_t center,long long int prec);
 
+int calc_movie_params(char* params,long long int prec);
+
 int render_and_flush(
 			const plugin_facility_t* render_facility,
 			complex_number_t         render_center,
