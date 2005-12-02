@@ -10,14 +10,17 @@ wm title . "Tinyfract GUI"
 ## Create safe interpreter
 set parser [ interp create -safe ]
 
+## Set default width height
+set def_width [ expr [ winfo screenwidth . ] / 2 ]
+set def_height $def_width
+
 ## Standard parameters
 set fractal mandelbrot
-set geometry "[ expr [ winfo screenwidth . ] * 2 / 3 ]x[ expr [ winfo screenheight . ] * 2 / 3 ]"
+set geometry "${def_width}x${def_height}"
 set plugin_path "$env(PWD)/plugins"
 set output_method x11
 set output_parameter "H10,.5S10,.5B10,.5"
 set render_method recurse
-set render_method "recurse"
 set render_parameter "3"
 set precision "100"
 set scale "4"
@@ -25,7 +28,7 @@ set scale_test 0
 set center_real 0
 set center_imaginary 0
 set iteration_steps "100"
-set fractal_paramter ""
+set fractal_parameter ""
 set zoom_faktor 10
 
 set TINYFRACT_FD 0
@@ -142,7 +145,7 @@ wm withdraw .movie_progress
 ## Function for inerting options
 proc insert {} \
 {
-	global fractal_paramter plugin_path plugin_path_win output_parameter render_parameter geometry precision center_real center_imaginary scale iteration_steps fractal_parameter_win plugin_path_win output_parameter_win render_parameter_win geometry_win precision_win
+	global fractal_parameter plugin_path plugin_path_win output_parameter render_parameter geometry precision center_real center_imaginary scale iteration_steps fractal_parameter_win plugin_path_win output_parameter_win render_parameter_win geometry_win precision_win
 
 	## First rendering insert
 	$fractal_parameter_win.entry delete 0 end
@@ -152,7 +155,7 @@ proc insert {} \
 	$plugin_path_win.entry delete 0 end
 	$precision_win.entry delete 0 end
 	
-	$fractal_parameter_win.entry insert 0 $fractal_paramter
+	$fractal_parameter_win.entry insert 0 $fractal_parameter
 	$output_parameter_win.entry insert 0 $output_parameter
 	$render_parameter_win.entry insert 0 $render_parameter
 	$geometry_win.entry insert 0 $geometry
@@ -208,7 +211,7 @@ proc load_options {} \
 ## Function for saving
 proc safe_options {} \
 {
-	global fractal plugin_path output_method output_parameter render_method render_parameter precision fractal_paramter
+	global fractal plugin_path output_method output_parameter render_method render_parameter precision fractal_parameter
 
 	set path [ tk_getSaveFile ]
 	if { $path != "" } \
@@ -221,8 +224,8 @@ proc safe_options {} \
 	set scale [ .left.scale.scale get ]
 	set iteration_steps [ .left.iterations.iteration_steps get ]
 
-	puts "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_paramter {$fractal_paramter}\n"
-	puts $path_fd "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_paramter {$fractal_paramter}\n"
+	puts "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_parameter {$fractal_parameter}\n"
+	puts $path_fd "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_parameter {$fractal_parameter}\n"
 	close $path_fd
 }
 
@@ -241,11 +244,12 @@ proc eventdata { TINYFRACT_FD } \
 ## Function for saving as a png
 proc safe_png {} \
 {
-	global ready_flag fractal geometry plugin_path output_method output_parameter render_method render_parameter precision fractal_paramter parser
+	global ready_flag fractal geometry plugin_path output_method output_parameter render_method render_parameter precision fractal_parameter parser
 
 	set ready_flag 0
 
 	set path [ tk_getSaveFile ]
+	puts "Der Zielpfad ist $path"
 	if { $path == "" } { return }
 	
 	set center_real [ .left.center_real.center_real get ]
@@ -253,15 +257,15 @@ proc safe_png {} \
 	set scale [ .left.scale.scale get ]
 	set iteration_steps [ .left.iterations.iteration_steps get ]
 
-	if { $fractal_paramter == "" } \
+	if { $fractal_parameter == "" } \
 	{
 		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision"
 		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision" "r+" ]
 		fileevent $png readable "eventdata $png"
 	} else \
 	{
-		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter -r$render_method -R$render_parameter -p$precision -F$fractal_paramter"
-		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter -r$render_method -R$render_parameter -p$precision -F$fractal_paramter" "r+" ]
+		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision -F$fractal_parameter"
+		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision -F$fractal_parameter" "r+" ]
 		fileevent $png readable "eventdata $png"
 	}
 
@@ -415,14 +419,16 @@ proc render { TINYFRACT_FD mode } \
 ## Function for first rendering
 proc first_rendering {} \
 {
-	global test TINYFRACT_FD geometry fractal fractal_paramter plugin_path output_method output_parameter render_method render_parameter precision geometry fractal_parameter_win output_parameter_win render_parameter_win precision_win geometry_win
+	global test TINYFRACT_FD geometry fractal fractal_parameter plugin_path output_method output_parameter render_method render_parameter precision geometry fractal_parameter_win output_parameter_win render_parameter_win precision_win geometry_win
 
-	set fractal_paramter [ $fractal_parameter_win.entry get ]
+	set fractal_parameter [ $fractal_parameter_win.entry get ]
 	set output_parameter [ $output_parameter_win.entry get ]
 	set render_parameter [ $render_parameter_win.entry get ]
 	set precision [ $precision_win.entry get ]
 	set geometry [ $geometry_win.entry get ]
 	
+	update
+
 	if { $precision == "" } \
 	{
 		error_message "You have to specify a precision!" OK Cancel
@@ -461,14 +467,14 @@ proc first_rendering {} \
 	}
 
 	## Call tinyfract with standard parameters(fractal parameters are only used if necessary).
-	if { $fractal_paramter == "" } \
+	if { $fractal_parameter == "" } \
 	{
-		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
-		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision"
+		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O${output_parameter}@[ winfo id .fractal ] -r$render_method -R$render_parameter -p$precision" "r+" ]
+		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter@[ winfo id .fractal ] -r$render_method -R$render_parameter -p$precision"
 	} else \
 	{
-		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -F$fractal_paramter -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision" "r+" ]
-		puts "./tinyfract -f$fractal -F$fractal_paramter -g$geometry -P$plugin_path -o$output_method -O$output_parameter -r$render_method -R$render_parameter -p$precision"
+		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -F$fractal_parameter -g$geometry -P$plugin_path -o$output_method -O$output_parameter@[ winfo id .fractal ] -r$render_method -R$render_parameter -p$precision" "r+" ]
+		puts "./tinyfract -f$fractal -F$fractal_parameter -g$geometry -P$plugin_path -o$output_method -O$output_parameter@[ winfo id .fractal ] -r$render_method -R$render_parameter -p$precision"
 	}
 
 	fileevent $TINYFRACT_FD readable { eventdata $TINYFRACT_FD }
@@ -496,10 +502,10 @@ iwidgets::combobox .start_params.fractal \
 	-selectioncommand { set fractal [ .start_params.fractal getcurselection ] }
 .start_params.fractal insert list end mandelbrot julia lambda
 .start_params.fractal selection set $fractal
-iwidgets::labeledwidget .start_params.fractal_paramter \
+iwidgets::labeledwidget .start_params.fractal_parameter \
 	-labeltext "Fractal parameter:" \
 	-labelpos w
-set fractal_parameter_win [ .start_params.fractal_paramter childsite ]
+set fractal_parameter_win [ .start_params.fractal_parameter childsite ]
 entry $fractal_parameter_win.entry
 iwidgets::combobox .start_params.output_method \
 	-labeltext "Output method:" \
@@ -586,6 +592,28 @@ entry .left.center_imaginary.center_imaginary
 entry .left.iterations.iteration_steps
 entry .left.scale.scale
 
+## Frame for displaing the fractal
+frame .fractal \
+	-width $def_width \
+	-height $def_height \
+	-container 1
+
+## Misceleanous informations for the user
+frame .misc
+
+label .misc.fractal \
+	-text "Frakatl: $fractal"
+label .misc.fractal_parameter \
+	-text "Fraktal Parameter: $fractal_parameter"
+label .misc.render_method \
+	-text "Render Art: $render_method"
+label .misc.render_args \
+	-text "Render Parameter: $render_parameter"
+label .misc.prec \
+	-text "Precision: $precision"
+label .misc.plugin_path \
+	-text "Plugin path: $plugin_path"
+
 ## Insert options
 insert
 
@@ -644,18 +672,20 @@ grid .error.bitmap -row 0 -column 0 -sticky nsew
 grid .error.exit -row 1 -column 1 -sticky nsew
 grid .error.return -row 1 -column 0 -sticky nsew
 
+
+## Main window
 pack .topic.headline -expand 1 -fill both
 
-pack .left.center_real.center_real_info -side left -expand 1 -fill both
-pack .left.center_imaginary.center_imaginary_info -side left -expand 1 -fill both
-pack .left.center_real.center_real -side left -expand 1 -fill both
-pack .left.center_imaginary.center_imaginary -side left -expand 1 -fill both
+pack .left.center_real.center_real_info -side top -expand 1 -fill both
+pack .left.center_imaginary.center_imaginary_info -side top -expand 1 -fill both
+pack .left.center_real.center_real -side top -expand 1 -fill both
+pack .left.center_imaginary.center_imaginary -side top -expand 1 -fill both
 
-pack .left.iterations.iteration_steps_info -side left -expand 1 -fill both
-pack .left.iterations.iteration_steps -side left -expand 1 -fill both
+pack .left.iterations.iteration_steps_info -side top -expand 1 -fill both
+pack .left.iterations.iteration_steps -side top -expand 1 -fill both
 
-pack .left.scale.scale_info -side left -expand 1 -fill both
-pack .left.scale.scale -side left -expand 1 -fill both
+pack .left.scale.scale_info -side top -expand 1 -fill both
+pack .left.scale.scale -side top -expand 1 -fill both
 
 pack .right.zoom.faktor -expand 1 -fill both
 pack .right.zoom.zoom_in -side left -expand 1 -fill both
@@ -668,19 +698,30 @@ pack .buttons.record_movie -expand 1 -fill both
 pack .buttons.cancel -expand 1 -fill both
 pack .buttons.progress -expand 1 -fill both
 
+grid .misc.fractal -row 0 -column 0 -sticky nsew
+grid .misc.fractal_parameter -row 0 -column 1 -sticky nsew
+grid .misc.prec -row 1 -column 0 -sticky nsew
+grid .misc.render_method -row 1 -column 1 -sticky nsew
+grid .misc.render_args -row 2 -column 0 -sticky nsew
+grid .misc.plugin_path -row 2 -column 1 -sticky nsew
+
 pack .topic -expand 1 -fill both
-pack .left.center_real -side left -expand 1 -fill both
-pack .left.center_imaginary -side left -expand 1 -fill both
-pack .left.scale -side left -expand 1 -fill both
-pack .left.iterations -side left -expand 1 -fill both
-pack .right.zoom -side left -expand 1 -fill both
-pack .buttons -side bottom -expand 1 -fill both
+pack .fractal -side left
+pack .left.center_real -side top -expand 1 -fill both
+pack .left.center_imaginary -side top -expand 1 -fill both
+pack .left.scale -side top -expand 1 -fill both
+pack .left.iterations -side top -expand 1 -fill both
+pack .right.zoom -side top -expand 1 -fill both
 
-pack .left -side left -expand 1 -fill both
-pack .right -side right -expand 1 -fill both
+pack .left -side top -expand 1 -fill both
+pack .right -side top -expand 1 -fill both
+pack .buttons -side top -expand 1 -fill both
+pack .misc -side left -expand 1 -fill both
 
+
+## Start parameter field
 pack .start_params.fractal -fill both -expand 1
-pack .start_params.fractal_paramter -fill both -expand 1
+pack .start_params.fractal_parameter -fill both -expand 1
 pack $fractal_parameter_win.entry -side left -fill both -expand 1
 pack .start_params.output_method -fill both -expand 1
 pack .start_params.output_parameter -fill both -expand 1
@@ -688,8 +729,8 @@ pack $output_parameter_win.entry -side left -fill both -expand 1
 pack .start_params.render_method  -fill both -expand 1
 pack .start_params.render_parameter -fill both -expand 1
 pack $render_parameter_win.entry -side left -fill both -expand 1
-pack .start_params.geometry -fill both -expand 1
-pack $geometry_win.entry -side left -fill both -expand 1
+#pack .start_params.geometry -fill both -expand 1
+#pack $geometry_win.entry -side left -fill both -expand 1
 pack .start_params.plugin_path -fill both -expand 1
 pack $plugin_path_win.entry -side left -fill both -expand 1
 pack $plugin_path_win.button -side left -fill both -expand 1

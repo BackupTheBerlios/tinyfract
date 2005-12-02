@@ -71,10 +71,27 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	float  thres[3];
 	
 	int iteration_steps;
-	
+	Window window_id;
 
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(x11_t)))) return NULL;
+
+	/* Check f parameters were given. */
+	if(args==NULL)
+	{
+		fprintf(stderr,"Please insert output parameters\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Scan the argument string. */
+	sscanf(args,"%c%d,%f%c%d,%f%c%d,%f@0x%x",
+		&des[0],&mod[0],&thres[0],
+		&des[1],&mod[1],&thres[1],
+		&des[2],&mod[2],&thres[2],&window_id);
+
+	#ifdef DEBUG
+	fprintf(stderr,"Window id is 0x%x\n",window_id);
+	#endif
 
 	/* Initialize the viewport. */
 	/* Open the display. */
@@ -82,7 +99,9 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	
 	/* Create the window. */
 	int bgColor=WhitePixel(context->dpy,DefaultScreen(context->dpy));
-	context->win=XCreateSimpleWindow(context->dpy,DefaultRootWindow(context->dpy),
+//	context->win=XCreateSimpleWindow(context->dpy,DefaultRootWindow(context->dpy),
+//			0,0,dimension.width,dimension.height,0,bgColor,bgColor);
+	context->win=XCreateSimpleWindow(context->dpy,window_id,
 			0,0,dimension.width,dimension.height,0,bgColor,bgColor);
 
 	/* Create a pixmap as double buffer. */
@@ -94,24 +113,9 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	context->gcpx=XCreateGC(context->dpy,context->pxmap,0,NULL);
 
 	
-	/* Check f parameters were given. */
-	if(args==NULL)
-	{
-		fprintf(stderr,"Please insert output parameters\n");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Scan the argument string. */
-	sscanf(args,"%c%d,%f%c%d,%f%c%d,%f",
-		&des[0],&mod[0],&thres[0],
-		&des[1],&mod[1],&thres[1],
-		&des[2],&mod[2],&thres[2]);
-	
-	
 	/* Just for help now. */
 	iteration_steps=mod[0]*mod[1]*mod[2];
 
-	
 	
 	/* Allocate colors */
 	for(i=0;i<iteration_steps;i++)
@@ -207,9 +211,11 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 	XSelectInput(handle->dpy,handle->win,0xffffff);
 
 	/* Now "map" the window (that is, make it appear on the screen). */
+	XUnmapWindow(handle->dpy,handle->win);
 	XMapWindow(handle->dpy,handle->win);
 
 	/* Get window size. */
+	fprintf(stderr,"Hallo\n");
 	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
 	for(;;)
 	{
@@ -255,6 +261,7 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 		}	
 	}
 exit_func: 
+
 	return;
 }
 
