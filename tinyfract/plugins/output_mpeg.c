@@ -199,8 +199,7 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 		exit(1);
 	}
 
-	/* the codec gives us the frame size, in samples */
-
+	/* Open output file */
 	context->output_file=fopen(filename, "wb");
 	if (context->output_file==NULL)
 	{
@@ -210,7 +209,7 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
     
 	/* alloc image and output buffer */
 	outbuf_size=100000;
-	handle>outbuf=malloc(outbuf_size);
+	context->outbuf=malloc(outbuf_size);
 	size=context->movie_context->width*context->movie_context->height;
 	picture_buf=malloc((size * 3) / 2); /* size for YUV 420 */
 
@@ -221,6 +220,9 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	context->picture->linesize[1]=context->movie_context->width / 2;
 	context->picture->linesize[2]=context->movie_context->width / 2;
 
+	/* Free vars */
+	free(picture_buf);
+
 	/* Return the handle. */
 	return context;
 }
@@ -228,6 +230,14 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 void destructor_mpeg(mpeg_t* handle)
 {
 	/* Free the handle and all other space */
+	fclose(handle->output_file);
+	free(handle->outbuf);
+
+	avcodec_close(handle->movie_context);
+	free(handle->movie_context);
+	free(handle->picture);
+
+	free(handle->colors);
 	free(handle);
 }
 
@@ -275,7 +285,7 @@ void flush_viewport_mpeg(mpeg_t* handle, button_event_t* position)
 	handle->outbuf[2] = 0x01;
 	handle->outbuf[3] = 0xb7;
 
-	fwrite(outbuf, 1, 4, f);	
+	fwrite(handle->outbuf,1,4,handle->output_file);	
 	
 	/* Tell the main function that the programm is over. */
 	position->type=autozoom_quit;

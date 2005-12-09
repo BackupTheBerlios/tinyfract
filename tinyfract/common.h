@@ -1,5 +1,5 @@
-#ifndef MYCOMMON_H
-#define MYCOMMON_H
+#ifndef TINYFRACTCOMMON_H
+#define TINYFRACTCOMMON_H
 
 /*
  * Some useful macros.

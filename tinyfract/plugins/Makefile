@@ -7,14 +7,13 @@ LDFLAGS=
 RM=/bin/rm
 
 
-all: fractal_mandelbrot.so fractal_lambda.so output_x11.so output_aa.so output_png.so render_recurse.so render_pix.so render_dumb.so
+all: fractal_mandelbrot.so fractal_lambda.so output_x11.so output_aa.so output_png.so output_mpeg.so render_recurse.so render_pix.so render_dumb.so
 
 clean:
 	$(RM) -f *.o *.so
 
 output_aa.o: output_aa.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
-
 output_aa.so: output_aa.o
 	$(LD) $(LDFLAGS) -o $@ -shared -laa $^ 
 
