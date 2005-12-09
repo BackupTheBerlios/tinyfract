@@ -43,20 +43,20 @@ wm geometry . [ winfo screenwidth . ]x[winfo screenheight . ]
 wm withdraw .
 
 ## Make nice colors for the interface
-option add *Menubutton.background yellow 100
-option add *Menubutton.foreground blue 100
+option add *Menubutton.background lightgrey 100
+option add *Menubutton.foreground black 100
 
-option add *Label.background yellow 100
-option add *Label.foreground blue 100
+option add *Label.background lightgrey 100
+option add *Label.foreground black 100
 
-option add *Entry.background yellow 100
-option add *Entry.foreground blue 100
+option add *Entry.background lightgrey 100
+option add *Entry.foreground black 100
 
-option add *Button.background yellow 100
-option add *Button.foreground blue 100
+option add *Button.background lightgrey 100
+option add *Button.foreground black 100
 
-option add *Menu.background yellow 100
-option add *Menu.foreground blue 100
+option add *Menu.background lightgrey 100
+option add *Menu.foreground black 100
 
 ## Dialog for an error
 iwidgets::messagedialog .md \
@@ -236,7 +236,7 @@ proc eventdata { TINYFRACT_FD } \
 	if {![ eof $TINYFRACT_FD ] } \
 	{
 		set line [ gets $TINYFRACT_FD ]
-		puts "Command is: $line"
+		puts "Command is: ($line)"
 		if { [ catch [ $parser eval $line ] result ] != 0 } { puts "While executing ($line) this error occured:($result)" }	
 	}
 }
@@ -280,11 +280,14 @@ proc record_movie { TINYFRACT_FD first_fd second_fd name } \
 {
 	global win4 rec_interp rec_test center_real1 center_imaginary1 scale1 center_real2 center_imaginary2 scale2 movie_list movie_flag ready_flag
 
+	## Get time string and split it
 	set time [ $win4.time get ]
 	set time [ split $time ":" ]
 
-	set steps [ expr ( [ lindex $time 0 ] * 60 * 60 * 24 ) + ( [ lindex $time 1 ] * 60 * 24 ) + ( [ lindex $time 2 ] *24 ) ]
+	## Calculate the number of necessary frames for the movie from the time
+	set steps [ expr ( [ lindex $time 0 ] * 60 * 60 * 25 ) + ( [ lindex $time 1 ] * 60 * 25 ) + ( [ lindex $time 2 ] * 25 ) ]
 
+	## Get params for the movie (scale,center,...)
 	set rec_test 0
 	for { set line [ gets $first_fd ] } { [ eof $first_fd ] != 1 } { set line [ gets $first_fd ] } { $rec_interp eval $line }
 	set rec_test 1
@@ -579,8 +582,8 @@ frame .buttons
 
 label .topic.headline \
 	-text "Graphical user interface for tinyfract" \
-	-font "-adobe-helvetica-bold-r-normal-*-24-*-*-*-*-*-iso8859-1" \
-	-fg red
+	-font "-adobe-courier-bold-r-*-*-34-*-100-100-n-200-iso8859-1" \
+	-fg black
 
 label .left.center_real.center_real_info -text "Center(Real part):"
 label .left.center_imaginary.center_imaginary_info -text "Center(Imaginary part):"
@@ -602,7 +605,7 @@ frame .fractal \
 frame .misc
 
 label .misc.fractal \
-	-text "Frakatl: $fractal"
+	-text "Fraktal: $fractal"
 label .misc.fractal_parameter \
 	-text "Fraktal Parameter: $fractal_parameter"
 label .misc.render_method \

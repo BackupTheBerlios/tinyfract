@@ -151,12 +151,6 @@ int calc_movie_params(char* params,long long int prec)
 	sscanf(help,"%d",&steps);
 
 	#ifdef DEBUG
-//	gmp_printf("Re Center1: %F.100f\n",center1_real);
-//	gmp_printf("Im Center1: %F.100f\n",center1_imaginary);
-//	gmp_printf("Re Center2: %F.100f\n",center2_real);
-//	gmp_printf("Im Center2: %F.100f\n",center2_imaginary);
-//	gmp_printf("Scale1: %F.100f\n",scale1);
-//	gmp_printf("Scale2: %F.100f\n",scale2);
 	fprintf(stderr,"Steps: %d\n",steps);
 	#endif
 
@@ -178,7 +172,7 @@ int calc_movie_params(char* params,long long int prec)
 	sprintf(format_string,"add_movie_list %%F.%lldf %%F.%lldf %%F.%lldf %%d\n",prec,prec,prec);
 
 	/* Print the new centers and scales. */
-	for(i=0;i<=steps;i++)
+	for(i=1;i<=steps;i++)
 	{
 		/* New center real. */
 		mpf_mul_ui(new_center_real,center_real_shift,i);
@@ -191,6 +185,10 @@ int calc_movie_params(char* params,long long int prec)
 		/* New scale. */
 		mpf_mul_ui(new_scale,scale_shift,i);
 		mpf_add(new_scale,new_scale,scale1);
+
+		#ifdef DEBUG
+		fprintf(stderr,"Step %d:", i);
+		#endif
 
 		gmp_printf(format_string,new_center_real,new_center_imaginary,new_scale,steps);
 		fflush(stdout);

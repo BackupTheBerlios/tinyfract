@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef MYCOMMON_H
+#define MYCOMMON_H
 
 /*
  * Some useful macros.

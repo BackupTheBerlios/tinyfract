@@ -1,9 +1,10 @@
 #include <ffmpeg/avcodec.h>
 #include <ffmpeg/avformat.h>
+
+#include "../plugin.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../plugin.h"
 
 #define MAX_COLORS 65536
 #define COLOR_CEILING 65536 
@@ -18,10 +19,11 @@ typedef struct
 
 typedef struct
 {
-	AVCodecContext* context;
+	AVCodecContext* movie_context;
 	AVFrame*        picture;
 	FILE*           output_file;
 	yuv_t*          colors;
+	uint8_t*        outbuf;
 } mpeg_t;	
 
 
@@ -77,11 +79,10 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	char     des[3];
 	int      mod[3];
 	float    thres[3];
-	uint8_t* outbuf;
 	uint8_t* picture_buf;
 	int      iteration_steps;
 	char*    output_args;
-	char*    name;
+	char*    filename;
 	
 
 	/* Get memory for the output context. */
@@ -89,10 +90,10 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 
 	/* Parse the output args and the safing file name. */
 	output_args=strtok(args,"-");
-	name=strtok(NULL,"-");
+	filename=strtok(NULL,"-");
 	#ifdef DEBUG
-	fprintf(stderr,"Output args: %s\n", output_args);
-	fprintf(stderr,"Safing file: %s\n", name);
+	fprintf(stderr,"Output args: %s\n",output_args);
+	fprintf(stderr,"Safing file: %s\n",filename);
 	#endif
 
 	
@@ -104,7 +105,7 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	}
 
 	/* Check safing file was given. */
-	if(name==NULL)
+	if(filename==NULL)
 	{
 		fprintf(stderr,"Please insert a safing file for the image.\n");
 		exit(EXIT_FAILURE);
@@ -174,25 +175,25 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	codec=avcodec_find_encoder(CODEC_ID_MPEG1VIDEO);
 
 	/* Get the context. */
-	context->context=avcodec_alloc_context();
+	context->movie_context=avcodec_alloc_context();
 
 	/* Get memory for the picture. */
 	context->picture=avcodec_alloc_frame();
 
 	/* put sample parameters */
-	context->context->bit_rate = 400000;
+	context->movie_context->bit_rate = 400000;
 	/* resolution must be a multiple of two */
-	context->context->width = 352;  
-	context->context->height = 288;
+	context->movie_context->width = 352;  
+	context->movie_context->height = 288;
 	/* frames per second */
-	context->context->frame_rate = 25;  
-	context->context->frame_rate_base= 1;
+//	context->movie_context->frame_rate = 25;  
+//	context->movie_context->frame_rate_base= 1;
 	/* emit one intra frame every ten frames */
-	context->context->gop_size = 10;
-	context->context->max_b_frames=1;
+	context->movie_context->gop_size = 10;
+	context->movie_context->max_b_frames=1;
 
 	/* open it */
-	if (avcodec_open(context->context,codec) < 0)
+	if (avcodec_open(context->movie_context,codec) < 0)
 	{
 		fprintf(stderr, "could not open codec\n");
 		exit(1);
@@ -201,23 +202,24 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	/* the codec gives us the frame size, in samples */
 
 	context->output_file=fopen(filename, "wb");
-	if (!f) {
+	if (context->output_file==NULL)
+	{
 		fprintf(stderr, "could not open %s\n", filename);
 		exit(1);
 	}
     
 	/* alloc image and output buffer */
 	outbuf_size=100000;
-	outbuf=malloc(outbuf_size);
-	size=context->context->width*context->context->height;
+	handle>outbuf=malloc(outbuf_size);
+	size=context->movie_context->width*context->movie_context->height;
 	picture_buf=malloc((size * 3) / 2); /* size for YUV 420 */
 
 	context->picture->data[0]=picture_buf;
-	context->picture->data[1]=concontext->picture->data[0]+size;
+	context->picture->data[1]=context->picture->data[0]+size;
 	context->picture->data[2]=context->picture->data[1] + size / 4;
-	context->picture->linesize[0]=context->context->width;
-	context->picture->linesize[1]=context->context->width / 2;
-	context->picture->linesize[2]=context->context->width / 2;
+	context->picture->linesize[0]=context->movie_context->width;
+	context->picture->linesize[1]=context->movie_context->width / 2;
+	context->picture->linesize[2]=context->movie_context->width / 2;
 
 	/* Return the handle. */
 	return context;
@@ -225,10 +227,7 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 
 void destructor_mpeg(mpeg_t* handle)
 {
-	/* Close open image and safing file. */
-	fclose(handle->output_file);
-	gdImageDestroy(handle->im);
-	
+	/* Free the handle and all other space */
 	free(handle);
 }
 
@@ -250,9 +249,9 @@ void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 	{
 		for(y=position.y;y<=dimension.height+position.y;y++)
 		{
-			handle->picture->data[0][y*picture->linesize[0]+x]=handle->colors[value].y;
-			handle->picture->data[1][y*picture->linesize[1]+x]=handle->colors[value].cb;
-			handle->picture->data[2][y*picture->linesize[2]+x]=handle->colors[value].cr;
+			handle->picture->data[0][y*handle->picture->linesize[0]+x]=handle->colors[value].y;
+			handle->picture->data[1][y*handle->picture->linesize[1]+x]=handle->colors[value].cb;
+			handle->picture->data[2][y*handle->picture->linesize[2]+x]=handle->colors[value].cr;
 		}
 	}
 }
@@ -261,19 +260,24 @@ void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 void put_pixel_mpeg(mpeg_t* handle, const view_position_t position, const pixel_value value)
 {
 	/* Put a pixel into the image. */
-	handle->picture->data[0][position->y*picture->linesize[0]+position->x]=handle->colors[value].y;
-	handle->picture->data[1][position->y*picture->linesize[1]+position->x]=handle->colors[value].cb;
-	handle->picture->data[2][position->y*picture->linesize[2]+position->x]=handle->colors[value].cr;
+	handle->picture->data[0][position.y*handle->picture->linesize[0]+position.x]=handle->colors[value].y;
+	handle->picture->data[1][position.y*handle->picture->linesize[1]+position.x]=handle->colors[value].cb;
+	handle->picture->data[2][position.y*handle->picture->linesize[2]+position.x]=handle->colors[value].cr;
 	
 }
 
 /* Safe the image */
 void flush_viewport_mpeg(mpeg_t* handle, button_event_t* position)
 {
-	/* Safe the image. */
-	gdImagePng(handle->im,handle->output_file);
+	/* Add the image to the video stream. */
+	handle->outbuf[0] = 0x00;
+	handle->outbuf[1] = 0x00;
+	handle->outbuf[2] = 0x01;
+	handle->outbuf[3] = 0xb7;
+
+	fwrite(outbuf, 1, 4, f);	
 	
-	/* Call the main function that the programm is over. */
+	/* Tell the main function that the programm is over. */
 	position->type=autozoom_quit;
 
 	return;

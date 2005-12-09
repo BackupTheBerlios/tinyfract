@@ -1,6 +1,7 @@
 #include <X11/Xlib.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "../common.h"
 #include "../plugin.h"
 
@@ -70,32 +71,54 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 	int    mod[3];
 	float  thres[3];
 	
-	int iteration_steps;
+	int    iteration_steps;
 	Window window_id;
+
+	char* args_tok;
+	char* color_str;
+	char* id_str;
 
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(x11_t)))) return NULL;
 
-	/* Check f parameters were given. */
+	/* Check if parameters were given. */
 	if(args==NULL)
 	{
 		fprintf(stderr,"Please insert output parameters\n");
 		exit(EXIT_FAILURE);
 	}
 
-	/* Scan the argument string. */
-	sscanf(args,"%c%d,%f%c%d,%f%c%d,%f@0x%x",
+	/* Tok the string. */
+	/* First we copy the args in order to let the main args untouched. */
+	args_tok=malloc(sizeof(args));
+	strcpy(args_tok,args);
+
+	/* Now tok. */
+	color_str=strtok(args_tok,"@");
+	id_str=strtok(NULL,"@");
+
+	/* Scan the color string. */
+	sscanf(args,"%c%d,%f%c%d,%f%c%d,%f",
 		&des[0],&mod[0],&thres[0],
 		&des[1],&mod[1],&thres[1],
-		&des[2],&mod[2],&thres[2],&window_id);
-
-	#ifdef DEBUG
-	fprintf(stderr,"Window id is 0x%x\n",window_id);
-	#endif
+		&des[2],&mod[2],&thres[2]);
 
 	/* Initialize the viewport. */
 	/* Open the display. */
 	context->dpy=XOpenDisplay(NULL);
+
+	/* Get the window id either from args or get new. */
+	if(id_str==NULL)
+	{
+		window_id=DefaultRootWindow(context->dpy);
+	} else
+	{
+		sscanf(id_str,"0x%x",&window_id);
+	}
+
+	#ifdef DEBUG
+	fprintf(stderr,"Window id is 0x%x\n",window_id);
+	#endif
 	
 	/* Create the window. */
 	int bgColor=WhitePixel(context->dpy,DefaultScreen(context->dpy));
@@ -215,7 +238,7 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 	XMapWindow(handle->dpy,handle->win);
 
 	/* Get window size. */
-	fprintf(stderr,"Hallo\n");
+//	fprintf(stderr,"Hallo\n");
 	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
 	for(;;)
 	{
