@@ -388,6 +388,9 @@ int main(int argc, char* argv[])
 				case 'q':
 					goto exit_func;
 					break;
+				case 'u':
+					(*output_facility->facility.output.remap_function)(output);
+					break;
 				case 'r':
 					break;
 				default :

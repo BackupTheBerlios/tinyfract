@@ -7,6 +7,18 @@ package require Iwidgets
 
 wm title . "Tinyfract GUI"
 
+## Set a bind command, its used remap the X11 window.
+#wm protocol . WM_TAKE_FOCUS { remap $TINYFRACT_FD }
+#bind . <Activate> { remap $TINYFRACT_FD }
+#bind . <Deactivate> { remap $TINYFRACT_FD }
+bind . <Configure> { remap $TINYFRACT_FD }
+#bind . <Map> { remap $TINYFRACT_FD }
+#bind . <Unmap> { remap $TINYFRACT_FD }
+#bind . <Visibility> { remap $TINYFRACT_FD }
+#bind . <Expose> { remap $TINYFRACT_FD }
+#bind . <Property> { remap $TINYFRACT_FD }
+#bind . <Colormap> { remap $TINYFRACT_FD }
+
 ## Create safe interpreter
 set parser [ interp create -safe ]
 
@@ -142,10 +154,19 @@ wm withdraw .movie_progress
 
 
 ## Functions
+## Function which is used to remap the window
+proc remap { TINYFRACT_FD } \
+{
+	if { $TINYFRACT_FD == 0 } { return }
+	puts "Remap the window"
+	puts $TINYFRACT_FD u
+	flush $TINYFRACT_FD
+}
+
 ## Function for inerting options
 proc insert {} \
 {
-	global fractal_parameter plugin_path plugin_path_win output_parameter render_parameter geometry precision center_real center_imaginary scale iteration_steps fractal_parameter_win plugin_path_win output_parameter_win render_parameter_win geometry_win precision_win
+	global fractal_parameter fractal plugin_path plugin_path_win output_parameter output_method render_parameter render_method geometry precision center_real center_imaginary scale iteration_steps fractal_parameter_win plugin_path_win output_parameter_win render_parameter_win geometry_win precision_win
 
 	## First rendering insert
 	$fractal_parameter_win.entry delete 0 end
@@ -172,6 +193,20 @@ proc insert {} \
 	.left.center_imaginary.center_imaginary insert 0 $center_imaginary
 	.left.iterations.iteration_steps insert 0 $iteration_steps
 	.left.scale.scale insert 0 $scale
+
+	## Update the misc info fields
+	.misc.fractal configure \
+		-text "Fraktal: $fractal"
+	.misc.fractal_parameter configure \
+		-text "Fraktal Parameter: $fractal_parameter"
+	.misc.render_method configure \
+		-text "Render Art: $render_method"
+	.misc.render_args configure \
+		-text "Render Parameter: $render_parameter"
+	.misc.prec configure \
+		-text "Precision: $precision"
+	.misc.plugin_path configure \
+		-text "Plugin path: $plugin_path"
 
 	update
 }

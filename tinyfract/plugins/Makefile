@@ -40,7 +40,9 @@ output_png.so: output_png.o
 output_mpeg.o: output_mpeg.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 output_mpeg.so: output_mpeg.o
-	$(LD) $(LDFLAGS) -o $@ -shared -lavcodec $^ 
+	$(LD) $(LDFLAGS) -o $@ -shared /usr/lib/libavcodec.a /usr/lib/libavformat.a $^ 
+#output_mpeg.so: output_mpeg.o
+#	$(LD) $(LDFLAGS) -o $@ -shared -lavcodec -lavformat $^ 
 
 render_dumb.o: render_dumb.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<

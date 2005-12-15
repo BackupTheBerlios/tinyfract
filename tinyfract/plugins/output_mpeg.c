@@ -181,15 +181,15 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	context->picture=avcodec_alloc_frame();
 
 	/* put sample parameters */
-	context->movie_context->bit_rate = 400000;
+	context->movie_context->bit_rate=400000;
 	/* resolution must be a multiple of two */
-	context->movie_context->width = 352;  
-	context->movie_context->height = 288;
+	context->movie_context->width=352;  
+	context->movie_context->height=288;
 	/* frames per second */
 //	context->movie_context->frame_rate = 25;  
 //	context->movie_context->frame_rate_base= 1;
 	/* emit one intra frame every ten frames */
-	context->movie_context->gop_size = 10;
+	context->movie_context->gop_size=10;
 	context->movie_context->max_b_frames=1;
 
 	/* open it */
@@ -287,8 +287,8 @@ void flush_viewport_mpeg(mpeg_t* handle, button_event_t* position)
 
 	fwrite(handle->outbuf,1,4,handle->output_file);	
 	
-	/* Tell the main function that the programm is over. */
-	position->type=autozoom_quit;
+	/* Tell the main function that the frame is added. */
+	position->type=autozoom_do_nothing;
 
 	return;
 }

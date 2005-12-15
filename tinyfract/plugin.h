@@ -51,6 +51,8 @@ typedef void (plugin_output_put_pixel_function_t)
 	 const view_position_t position,
 	 const pixel_value value);
 
+typedef void (plugin_output_remap_function_t)
+	(void* handle);
 
 /* Function types for the render facility */
 typedef void* (plugin_render_constructor_t) 
@@ -96,6 +98,7 @@ typedef struct
 	plugin_output_fill_rect_function_t*      fill_rect_function;
 	plugin_output_flush_viewport_function_t* flush_viewport_function;
 	plugin_output_put_pixel_function_t*      put_pixel_function;
+	plugin_output_remap_function_t*          remap_function;
 } plugin_facility_output_t;
 
 

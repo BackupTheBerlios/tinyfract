@@ -223,6 +223,27 @@ void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_va
 	XDrawPoint(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y);
 }
 
+/* Remap the window. */
+void remap_x11(x11_t* handle)
+{
+	XWindowAttributes attributes;
+	
+	/* Unmap and map the viewport. */
+	#ifdef DEBUG
+	fprintf(stderr,"Unmap and Map the viewport.\n");
+	#endif
+	/* First get the window attributes. */
+	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
+	/* Put double buffer onto the window. */
+	XCopyArea(handle->dpy,handle->pxmap,handle->win,handle->gc,
+		0,0,attributes.width,attributes.height,0,0);
+	/* Send request to the server */
+	XFlush(handle->dpy);
+	/* Map and unmap */
+	XUnmapWindow(handle->dpy,handle->win);
+	XMapWindow(handle->dpy,handle->win);
+}
+
 /* Flush X11 viewport */
 void flush_viewport_x11(x11_t* handle, button_event_t* position)
 {
@@ -304,6 +325,7 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 				blit_rect_function:      (const plugin_output_blit_rect_function_t*) &blit_rect_x11,
 				fill_rect_function:      (const plugin_output_fill_rect_function_t*) &fill_rect_x11,
 				flush_viewport_function: (const plugin_output_flush_viewport_function_t*) &flush_viewport_x11,
+				remap_function:          (const plugin_output_remap_function_t*) &remap_x11,
 				put_pixel_function:      (const plugin_output_put_pixel_function_t*) &put_pixel_x11,
 			}
 		}
