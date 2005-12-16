@@ -209,8 +209,8 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	/* put sample parameters */
 	context->movie_context->bit_rate=400000;
 	/* resolution must be a multiple of two */
-	context->movie_context->width=352;  
-	context->movie_context->height=288;
+	context->movie_context->width=dimension.width;  
+	context->movie_context->height=dimension.height;
 	/* frames per second */
 	context->movie_context->time_base=(AVRational){1,25};
 	/* emit one intra frame every ten frames */
@@ -294,30 +294,6 @@ void blit_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 {
 }
 
-
-/* Fill rectangle in image with color. */
-void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
-{
-	int x;
-	int y;
-
-	#ifdef DEBUG
-	fprintf(stderr,"Put a filled square to the buffer.\n");
-	#endif
-
-	/* Put a filled rectangle in the image. */
-	/* Duoble For-loop */
-	for(x=position.x;x<=dimension.width+position.x;x++)
-	{
-		for(y=position.y;y<=dimension.height+position.y;y++)
-		{
-			handle->picture->data[0][y*handle->picture->linesize[0]+x]=handle->colors[value].y;
-			handle->picture->data[1][y*handle->picture->linesize[1]+x]=handle->colors[value].cb;
-			handle->picture->data[2][y*handle->picture->linesize[2]+x]=handle->colors[value].cr;
-		}
-	}
-}
-
 /* Put pixel into the image viewport. */
 void put_pixel_mpeg(mpeg_t* handle, const view_position_t position, const pixel_value value)
 {
@@ -326,6 +302,27 @@ void put_pixel_mpeg(mpeg_t* handle, const view_position_t position, const pixel_
 	handle->picture->data[1][position.y*handle->picture->linesize[1]/2+position.x/2]=handle->colors[value].cb;
 	handle->picture->data[2][position.y*handle->picture->linesize[2]/2+position.x/2]=handle->colors[value].cr;
 }
+
+/* Fill rectangle in image with color. */
+void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
+{
+	int             x;
+	int             y;
+	view_position_t pos;
+
+	/* Put a filled rectangle in the image. */
+	/* Duoble For-loop */
+	for(x=position.x;x<=dimension.width+position.x;x++)
+	{
+		for(y=position.y;y<=dimension.height+position.y;y++)
+		{
+			pos.x=x;
+			pos.y=y;
+			put_pixel_mpeg(handle,pos,value);
+		}
+	}
+}
+
 
 /* Add the picture to the video stream. */
 void flush_viewport_mpeg(mpeg_t* handle, button_event_t* position)
