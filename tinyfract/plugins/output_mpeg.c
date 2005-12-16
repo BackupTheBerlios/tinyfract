@@ -24,6 +24,9 @@ typedef struct
 	FILE*           output_file;
 	yuv_t*          colors;
 	uint8_t*        outbuf;
+	int             out_size;
+	int             outbuf_size;
+	int             number_of_frames;
 } mpeg_t;	
 
 
@@ -71,7 +74,6 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	mpeg_t*  context;
 	AVCodec* codec;
 	int      i;
-	int      outbuf_size;
 	int      size;
 	float    H;
 	float    S;
@@ -85,9 +87,22 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	char*    filename;
 	
 
+	/* Check wether any parameters were given. */
+	if(args==NULL)
+	{
+		fprintf(stderr,"Please insert color parameters and a safing file.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	/* Get memory for the output context. */
 	if (!(context=malloc(sizeof(mpeg_t)))) return NULL;
 
+	/* This must be called before using libavcodec and libavformat. */
+	avcodec_init();
+
+	/* register all the codecs */
+	avcodec_register_all();
+	
 	/* Parse the output args and the safing file name. */
 	output_args=strtok(args,"-");
 	filename=strtok(NULL,"-");
@@ -100,14 +115,14 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	/* Check if parameters were given. */
 	if(output_args==NULL)
 	{
-		fprintf(stderr,"Please insert output parameters\n");
+		fprintf(stderr,"Please insert output parameters or you typed it wrong\n");
 		exit(EXIT_FAILURE);
 	}
 
 	/* Check safing file was given. */
 	if(filename==NULL)
 	{
-		fprintf(stderr,"Please insert a safing file for the image.\n");
+		fprintf(stderr,"Please insert a safing file for the image or you typed it wrong.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -166,15 +181,26 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 		}
 
 		/* Now we write the color information, the RGB Value is translatet into YCbCr. */
-		context->colors[i].y=0.299*(R(H,S,Br)/255)+0.587*(G(H,S,Br)/255)+0.114*(B(H,S,Br)/255);
-		context->colors[i].cb=(((B(H,S,Br)/255)-context->colors[i].y)/1.772)+0.5;
-		context->colors[i].cr=(((R(H,S,Br)/255)-context->colors[i].y)/1.402)+0.5;
+		context->colors[i].y=0.299*(R(H,S,Br)*255)+0.587*(G(H,S,Br)*255)+0.114*(B(H,S,Br)*255);
+		context->colors[i].cb=(((B(H,S,Br)*255)-context->colors[i].y)/1.772)+0.5;
+		context->colors[i].cr=(((R(H,S,Br)*255)-context->colors[i].y)/1.402)+0.5;
+		#ifdef DEBUG
+		fprintf(stderr,"Color for step %d is: Y: %f Cb: %f Cr: %f\n",i,context->colors[i].y,context->colors[i].cb,context->colors[i].cr);
+		#endif
 	}
+
+	/* Set frame number to 0. */
+	context->number_of_frames=0;
 
 	/* Find the mpeg1 video encoder. */
 	codec=avcodec_find_encoder(CODEC_ID_MPEG1VIDEO);
+	if(!codec)
+	{
+		fprintf(stderr,"Could not find encoder.\n");
+		exit(EXIT_FAILURE);
+	}
 
-	/* Get the context. */
+	/* Get memory for the context. */
 	context->movie_context=avcodec_alloc_context();
 
 	/* Get memory for the picture. */
@@ -186,17 +212,17 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	context->movie_context->width=352;  
 	context->movie_context->height=288;
 	/* frames per second */
-//	context->movie_context->frame_rate = 25;  
-//	context->movie_context->frame_rate_base= 1;
+	context->movie_context->time_base=(AVRational){1,25};
 	/* emit one intra frame every ten frames */
 	context->movie_context->gop_size=10;
 	context->movie_context->max_b_frames=1;
+	context->movie_context->pix_fmt=PIX_FMT_YUV420P;
 
 	/* open it */
-	if (avcodec_open(context->movie_context,codec) < 0)
+	if(avcodec_open(context->movie_context,codec) < 0)
 	{
 		fprintf(stderr, "could not open codec\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	/* Open output file */
@@ -208,8 +234,8 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	}
     
 	/* alloc image and output buffer */
-	outbuf_size=100000;
-	context->outbuf=malloc(outbuf_size);
+	context->outbuf_size=100000;
+	context->outbuf=malloc(context->outbuf_size);
 	size=context->movie_context->width*context->movie_context->height;
 	picture_buf=malloc((size * 3) / 2); /* size for YUV 420 */
 
@@ -220,8 +246,6 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	context->picture->linesize[1]=context->movie_context->width / 2;
 	context->picture->linesize[2]=context->movie_context->width / 2;
 
-	/* Free vars */
-	free(picture_buf);
 
 	/* Return the handle. */
 	return context;
@@ -229,6 +253,30 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 
 void destructor_mpeg(mpeg_t* handle)
 {
+	int i;
+
+	/* get the delayed frames */
+	#ifdef DEBUG
+	fprintf(stderr,"Get the delayed frames.\n");
+	#endif
+	for(i=handle->number_of_frames;handle->out_size;i++) {
+		fflush(stdout);
+
+		handle->out_size=avcodec_encode_video(handle->movie_context,handle->outbuf,handle->outbuf_size,NULL);
+		#ifdef DEBUG
+		fprintf(stderr,"write frame %3d (size=%5d)\n",i,handle->out_size);
+		#endif
+		fwrite(handle->outbuf,1,handle->out_size,handle->output_file);
+	}
+
+	/* Add the image to the video stream. */
+	handle->outbuf[0] = 0x00;
+	handle->outbuf[1] = 0x00;
+	handle->outbuf[2] = 0x01;
+	handle->outbuf[3] = 0xb7;
+
+	fwrite(handle->outbuf,1,4,handle->output_file);	
+	
 	/* Free the handle and all other space */
 	fclose(handle->output_file);
 	free(handle->outbuf);
@@ -253,8 +301,12 @@ void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 	int x;
 	int y;
 
+	#ifdef DEBUG
+	fprintf(stderr,"Put a filled square to the buffer.\n");
+	#endif
+
 	/* Put a filled rectangle in the image. */
-	/* Dupble for loop */
+	/* Duoble For-loop */
 	for(x=position.x;x<=dimension.width+position.x;x++)
 	{
 		for(y=position.y;y<=dimension.height+position.y;y++)
@@ -269,24 +321,29 @@ void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 /* Put pixel into the image viewport. */
 void put_pixel_mpeg(mpeg_t* handle, const view_position_t position, const pixel_value value)
 {
-	/* Put a pixel into the image. */
-	handle->picture->data[0][position.y*handle->picture->linesize[0]+position.x]=handle->colors[value].y;
-	handle->picture->data[1][position.y*handle->picture->linesize[1]+position.x]=handle->colors[value].cb;
-	handle->picture->data[2][position.y*handle->picture->linesize[2]+position.x]=handle->colors[value].cr;
-	
+	/* Put a pixel into the picture buffer. */
+	handle->picture->data[0][position.y*handle->picture->linesize[0]+position.x]=handle->colors[value].y*3;
+	handle->picture->data[1][position.y*handle->picture->linesize[1]/2+position.x/2]=handle->colors[value].cb;
+	handle->picture->data[2][position.y*handle->picture->linesize[2]/2+position.x/2]=handle->colors[value].cr;
 }
 
-/* Safe the image */
+/* Add the picture to the video stream. */
 void flush_viewport_mpeg(mpeg_t* handle, button_event_t* position)
 {
-	/* Add the image to the video stream. */
-	handle->outbuf[0] = 0x00;
-	handle->outbuf[1] = 0x00;
-	handle->outbuf[2] = 0x01;
-	handle->outbuf[3] = 0xb7;
+	#ifdef DEBUG
+	fprintf(stderr,"Encode a picture.\n");
+	#endif
 
-	fwrite(handle->outbuf,1,4,handle->output_file);	
-	
+	/* encode the image */
+	handle->out_size=avcodec_encode_video(handle->movie_context,handle->outbuf,handle->outbuf_size,handle->picture);
+	#ifdef DEBUG
+	fprintf(stderr,"encoding frame (size=%5d)\n",handle->out_size);
+	#endif
+	fwrite(handle->outbuf,1,handle->out_size,handle->output_file);
+
+	/* Add one frame to the number of frames. */
+	handle->number_of_frames++;
+
 	/* Tell the main function that the frame is added. */
 	position->type=autozoom_do_nothing;
 
