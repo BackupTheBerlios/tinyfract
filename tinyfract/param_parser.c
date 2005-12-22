@@ -108,7 +108,7 @@ int calc_movie_params(char* params,long long int prec)
 	real_number_t new_center_imaginary;
 	real_number_t new_scale;
 	char*         help;
-	char*         format_string;
+	char*         add_movie_list_format_string;
 	char*         params_tok;
 	unsigned int  steps;
 	unsigned int  i;
@@ -150,13 +150,12 @@ int calc_movie_params(char* params,long long int prec)
 	help=strtok(NULL,",");
 	sscanf(help,"%d",&steps);
 
-	#ifdef DEBUG
-	fprintf(stderr,"Steps: %d\n",steps);
-	#endif
-
 	/* Get the difference between the single movie fraktals and calculate the shift. */
 	/* Center real shift. */
 	mpf_sub(calc_help,center2_real,center1_real);
+	/* The first picture should be the first given picture, so we have to increment the steps. The movie is the one frame longer then requested but */
+	/* I think that this is not a very important problem. */
+	steps++;
 	mpf_div_ui(center_real_shift,calc_help,steps);
 
 	/* Center imaginary shift. */
@@ -167,12 +166,13 @@ int calc_movie_params(char* params,long long int prec)
 	mpf_sub(calc_help,scale2,scale1);
 	mpf_div_ui(scale_shift,calc_help,steps);
 
+	gmp_printf("%F.100f\n",scale_shift);
 	/* Set the format string. */
-	format_string=malloc(sizeof(char)*32+sizeof(long long int)*3);
-	sprintf(format_string,"add_movie_list %%F.%lldf %%F.%lldf %%F.%lldf %%d\n",prec,prec,prec);
+	add_movie_list_format_string=malloc(sizeof(char)*52+sizeof(long long int)*3);
+	sprintf(add_movie_list_format_string,"add_movie_list %%F.%lldf %%F.%lldf %%F.%lldf %%d\n",prec,prec,prec);
 
 	/* Print the new centers and scales. */
-	for(i=1;i<=steps;i++)
+	for(i=0;i<=steps;i++)
 	{
 		/* New center real. */
 		mpf_mul_ui(new_center_real,center_real_shift,i);
@@ -186,22 +186,19 @@ int calc_movie_params(char* params,long long int prec)
 		mpf_mul_ui(new_scale,scale_shift,i);
 		mpf_add(new_scale,new_scale,scale1);
 
-		#ifdef DEBUG
-		fprintf(stderr,"Step %d:", i);
-		#endif
-
-		gmp_printf(format_string,new_center_real,new_center_imaginary,new_scale,steps);
-		fflush(stdout);
+//		gmp_printf(add_movie_list_format_string,new_center_real,new_center_imaginary,new_scale,steps);
+//		gmp_printf("%F.100f\n",new_center_real);
+//		gmp_printf("%F.100f\n",new_center_imaginary);
+//		gmp_printf("%F.100f\n",new_scale);
+		gmp_printf("%d\n",steps);
+//		fflush(stdout);
 	}
 
 	/* Clear the multiple precision vars. */
 	mpf_clear(center1_real);
 	mpf_clear(center1_imaginary);
 	mpf_clear(center2_real);
-
-	mpf_clear(center2_imaginary);
-	fprintf(stderr,"Hallo\n");
-
+//	mpf_clear(center2_imaginary); /* Produziert einen glibc double free or corruption. */
 	mpf_clear(scale1);
 	mpf_clear(scale2);
 	mpf_clear(center_real_shift);
