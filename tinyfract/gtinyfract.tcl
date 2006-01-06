@@ -138,8 +138,7 @@ set win4 [ .record.forth childsite ]
 iwidgets::spintime $win4.time \
 	-orient horizontal
 
-#button .record.record -text "Record" -command { record_movie $TINYFRACT_FD [ open [ $win1.entry get ] r ] [ open [ $win2.entry get ] r ] [ $win3.entry get ] }
-button .record.record -text "Record" -command { record_movie $TINYFRACT_FD [ open "./mandel" r ] [ open "./mandel2" r ] "test" }
+button .record.record -text "Record" -command { record_movie $TINYFRACT_FD [ open [ $win1.entry get ] r ] [ open [ $win2.entry get ] r ] [ $win3.entry get ] }
 button .record.cancel -text "Cancel" -command "wm withdraw .record"
 
 wm withdraw .record
@@ -273,14 +272,7 @@ proc eventdata { TINYFRACT_FD } \
 	{
 		set line [ gets $TINYFRACT_FD ]
 		puts "Command is: ($line)"
-		set event_errno [ catch { $parser eval $line } result ]
-		switch $event_errno \
-			0 { } \
-			1 { puts "TCL_ERROR: While executing ($line) this error occured:($result)" } \
-			2 { puts "TCL_RETURN: While executing ($line) this error occured:($result)" } \
-			3 { puts "TCL_BREAK: While executing ($line) this error occured:($result)" } \
-			4 { puts "TCL_CONTINUE: While executing ($line) this error occured:($result)" } \
-			default { puts "FATAL_ERROR: While executing ($line)! Error:($result)" }
+		if { [ catch [ $parser eval $line ] result ] != 0 } { puts "While executing ($line) this error occured:($result)" }	
 	}
 }
 
@@ -323,15 +315,12 @@ proc record_movie { TINYFRACT_FD first_fd second_fd name } \
 {
 	global win4 rec_interp rec_test center_real1 center_imaginary1 scale1 center_real2 center_imaginary2 scale2 movie_list movie_flag ready_flag
 
-	## Get time string and split it into hours minutes and seconds
+	## Get time string and split it
 	set time [ $win4.time get ]
 	set time [ split $time ":" ]
 
 	## Calculate the number of necessary frames for the movie from the time
 	set steps [ expr ( [ lindex $time 0 ] * 60 * 60 * 25 ) + ( [ lindex $time 1 ] * 60 * 25 ) + ( [ lindex $time 2 ] * 25 ) ]
-
-	## JUST FOR DEBUG!!!!!
-	set steps 10
 
 	## Get params for the movie (scale,center,...)
 	set rec_test 0
@@ -341,24 +330,39 @@ proc record_movie { TINYFRACT_FD first_fd second_fd name } \
 
 	set movie_list ""
 	set movie_flag 0
+	set mov1 [ open "|./tinyfract -fmandelbrot -g100x100 -oaa -rrecurse -R3 -P./plugins -p100" "r+" ]
+	fileevent $mov1 readable "eventdata $mov1"
 	puts "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
-	puts $TINYFRACT_FD "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
-	flush $TINYFRACT_FD
+	puts $mov1 "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
+	flush $mov1
 	tkwait variable movie_flag
 	puts $movie_list
+	puts $mov1 "q\n"
+	flush $mov1
+	catch { close $mov1 }
+
+	puts "Go Recording!"
+	set mov [ open "|./tinyfract -fmandelbrot -P./plugins -g352x288 -ompeg -OH10,.5S10,.5B10,.5-mandel.mpeg -rrecurse -R3 -p100" "r+" ]
+	fileevent $mov readable "eventdata $mov"
 
 	wm deiconify .movie_progress
 	.movie_progress.progress configure -steps $steps
 	.movie_progress.progress reset
 	for { set i 0 } { $i < [ llength $movie_list ] } { incr i } \
 	{
+		puts "Render Frame $i/[ llength $movie_list ]"
 		set ready_flag 0
-		puts $TINYFRACT_FD "p[ lindex [ lindex $movie_list $i ] 0 ],[ lindex [ lindex $movie_list $i ] 1 ]\ns[ lindex [ lindex $movie_list $i ] 2 ]\nr\n"
-		flush $TINYFRACT_FD
+		puts "p[ lindex [ lindex $movie_list $i ] 0 ],[ lindex [ lindex $movie_list $i ] 1 ]\ns[ lindex [ lindex $movie_list $i ] 2 ]\nr\n"
+		puts $mov "p[ lindex [ lindex $movie_list $i ] 0 ],[ lindex [ lindex $movie_list $i ] 1 ]\ns[ lindex [ lindex $movie_list $i ] 2 ]\nr\n"
+		flush $mov
 		tkwait variable ready_flag
 		.movie_progress.progress step
 		insert
 	}
+	puts $mov "q\n"
+	flush $mov
+	close $mov
+
 	wm withdraw .movie_progress
 }
 
