@@ -78,7 +78,6 @@ void render_dumb(render_t* handle)
 	mpf_t            help;
 	mpf_t            help_two;
 	ordinal_number_t steps;
-	int count=1;
 	char*             format_string_center_real;
 	char*             format_string_center_imaginary;
 	char*             format_string_scale;
@@ -96,7 +95,6 @@ void render_dumb(render_t* handle)
 	gmp_fprintf(stderr,format_string_center_imaginary,Im(handle->center));
 	gmp_fprintf(stderr,format_string_scale,handle->scale);
 
-
 	mpf_set_default_prec(sizeof(char)*handle->prec);
 
 	mpf_init(Re(complex_position));
@@ -111,7 +109,7 @@ void render_dumb(render_t* handle)
 	shift.y=handle->geometry.height/2;
 	for(render_position.y=0;render_position.y<handle->geometry.height;render_position.y++)
 	{
-		printf("progress %d %d\n", render_position.y+1, handle->geometry.width);
+		printf("progress %d %d\n",render_position.y+1,handle->geometry.width);
 		fflush(stdout);
 		for(render_position.x=0;render_position.x<handle->geometry.width;render_position.x++)
 		{
@@ -127,7 +125,6 @@ void render_dumb(render_t* handle)
 
 			(*handle->output_facility->facility.output.put_pixel_function)
 				(handle->output,render_position,steps);
-			count++;
 		}
 	}
 	mpf_clear(Re(complex_position));

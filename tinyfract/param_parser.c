@@ -186,12 +186,12 @@ int calc_movie_params(char* params,long long int prec)
 		mpf_mul_ui(new_scale,scale_shift,i);
 		mpf_add(new_scale,new_scale,scale1);
 
-//		gmp_printf(add_movie_list_format_string,new_center_real,new_center_imaginary,new_scale,steps);
+		gmp_printf(add_movie_list_format_string,new_center_real,new_center_imaginary,new_scale,steps);
 //		gmp_printf("%F.100f\n",new_center_real);
 //		gmp_printf("%F.100f\n",new_center_imaginary);
 //		gmp_printf("%F.100f\n",new_scale);
-		gmp_printf("%d\n",steps);
-//		fflush(stdout);
+//		gmp_printf("%d\n",steps);
+		fflush(stdout);
 	}
 
 	/* Clear the multiple precision vars. */

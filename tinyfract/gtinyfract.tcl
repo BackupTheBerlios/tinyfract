@@ -96,24 +96,25 @@ set rec_interp [ interp create -safe ]
 proc define_rec { name value } \
 {
 	global rec_test
-	if { $name != "center_real" && $name != "center_imaginary" && $name != "scale" } { return }
+        if { $name != "center_real" && $name != "center_imaginary" && $name != "scale" && $name != "fractal" } { return }
 
-	puts $rec_test
-	if { $rec_test == 0 } \
-	{
-		set name [ list $name 1 ]
-		set name [ join $name "" ]
-		puts $name
-		global $name
-		set $name $value
-	} else \
-	{
-		set name [ list $name 2 ]
-		set name [ join $name "" ]
-		puts $name
-		global $name
-		set $name $value
-	}
+        puts $rec_test
+        ## Check if we handle the first or the last movie frame and set the options
+        if { $rec_test == 0 } \
+        {
+                set name [ list $name 1 ]
+                set name [ join $name "" ]
+                puts $name
+                global $name
+                set $name $value
+        } else \
+        {
+                set name [ list $name 2 ]
+                set name [ join $name "" ]
+                puts $name
+                global $name
+                set $name $value
+        }
 }
 $rec_interp alias define define_rec
 
@@ -272,7 +273,14 @@ proc eventdata { TINYFRACT_FD } \
 	{
 		set line [ gets $TINYFRACT_FD ]
 		puts "Command is: ($line)"
-		if { [ catch [ $parser eval $line ] result ] != 0 } { puts "While executing ($line) this error occured:($result)" }	
+		set errno_tinyfract [ catch { $parser eval $line } result ]
+		switch $errno_tinyfract \
+			0 { puts "TCL_OK while execute ($line)" } \
+			1 { puts "TCL_ERROR ($result) while execute ($line)" } \
+			2 { puts "TCL_RETURN ($result) while execute ($line)" } \
+			3 { puts "TCL_BREAK ($result) while execute ($line)" } \
+			4 { puts "TCL_CONTINUE ($result) while execute ($line)" } \
+			default { puts "FATAL_ERROR ($result) while execute ($line)" }
 	}
 }
 
@@ -313,57 +321,64 @@ proc safe_png {} \
 ## Record a fractal movie
 proc record_movie { TINYFRACT_FD first_fd second_fd name } \
 {
-	global win4 rec_interp rec_test center_real1 center_imaginary1 scale1 center_real2 center_imaginary2 scale2 movie_list movie_flag ready_flag
+	global win4 rec_interp rec_test center_real1 center_imaginary1 scale1 center_real2 center_imaginary2 scale2 fractal1 center_real center_imaginary scale fractal plugin_path output_parameter render_method render_parameter precision  movie_list movie_flag ready_flag
 
-	## Get time string and split it
-	set time [ $win4.time get ]
-	set time [ split $time ":" ]
+        ## Get time string and split it
+        set time [ $win4.time get ]
+        set time [ split $time ":" ]
 
-	## Calculate the number of necessary frames for the movie from the time
-	set steps [ expr ( [ lindex $time 0 ] * 60 * 60 * 25 ) + ( [ lindex $time 1 ] * 60 * 25 ) + ( [ lindex $time 2 ] * 25 ) ]
+        ## Calculate the number of necessary frames for the movie from the time
+        set steps [ expr ( [ lindex $time 0 ] * 60 * 60 * 25 ) + ( [ lindex $time 1 ] * 60 * 25 ) + ( [ lindex $time 2 ] * 25 ) ]
 
-	## Get params for the movie (scale,center,...)
-	set rec_test 0
-	for { set line [ gets $first_fd ] } { [ eof $first_fd ] != 1 } { set line [ gets $first_fd ] } { $rec_interp eval $line }
-	set rec_test 1
-	for { set line [ gets $second_fd ] } { [ eof $second_fd ] != 1 } { set line [ gets $second_fd ] } { $rec_interp eval $line }
+        ## Get params for the movie (scale,center,...)
+        set rec_test 0
+        for { set line [ gets $first_fd ] } { [ eof $first_fd ] != 1 } { set line [ gets $first_fd ] } { $rec_interp eval $line }
+        set rec_test 1
+        for { set line [ gets $second_fd ] } { [ eof $second_fd ] != 1 } { set line [ gets $second_fd ] } { $rec_interp eval $line }
 
-	set movie_list ""
-	set movie_flag 0
-	set mov1 [ open "|./tinyfract -fmandelbrot -g100x100 -oaa -rrecurse -R3 -P./plugins -p100" "r+" ]
-	fileevent $mov1 readable "eventdata $mov1"
-	puts "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
-	puts $mov1 "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
-	flush $mov1
-	tkwait variable movie_flag
-	puts $movie_list
-	puts $mov1 "q\n"
-	flush $mov1
-	catch { close $mov1 }
+        ## Get a list from tinyfract which includes ll informations for all frames
+        set movie_list ""
+        set movie_flag 0
+        set mov1 [ open "|./tinyfract -fmandelbrot -g100x100 -oaa -rrecurse -R3 -P./plugins -p100" "r+" ]
+        fileevent $mov1 readable "eventdata $mov1"
+        puts "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
+        puts $mov1 "c$center_real1,$center_imaginary1,$center_real2,$center_imaginary2,$scale1,$scale2,$steps"
+        flush $mov1
+        tkwait variable movie_flag
+        puts $mov1 "q\n"
+        flush $mov1
+        catch { close $mov1 }
 
-	puts "Go Recording!"
-	set mov [ open "|./tinyfract -fmandelbrot -P./plugins -g352x288 -ompeg -OH10,.5S10,.5B10,.5-mandel.mpeg -rrecurse -R3 -p100" "r+" ]
-	fileevent $mov readable "eventdata $mov"
+        ## Go Recording!
+        puts "Go Recording!"
+        set fractal $fractal1
+        puts "./tinyfract -f$fractal -P$plugin_path -g352x288 -ompeg -O${output_parameter}-$name -r$render_method -R$render_parameter -p$precision"
+        set mov [ open "|./tinyfract -f$fractal -P$plugin_path -g352x288 -ompeg -O${output_parameter}-$name -r$render_method -R$render_parameter -p$precision" "r+" ]
+        fileevent $mov readable "eventdata $mov"
 
-	wm deiconify .movie_progress
-	.movie_progress.progress configure -steps $steps
-	.movie_progress.progress reset
+        wm deiconify .movie_progress
+        .movie_progress.progress configure -steps $steps
+        .movie_progress.progress reset
+
 	for { set i 0 } { $i < [ llength $movie_list ] } { incr i } \
-	{
-		puts "Render Frame $i/[ llength $movie_list ]"
-		set ready_flag 0
-		puts "p[ lindex [ lindex $movie_list $i ] 0 ],[ lindex [ lindex $movie_list $i ] 1 ]\ns[ lindex [ lindex $movie_list $i ] 2 ]\nr\n"
-		puts $mov "p[ lindex [ lindex $movie_list $i ] 0 ],[ lindex [ lindex $movie_list $i ] 1 ]\ns[ lindex [ lindex $movie_list $i ] 2 ]\nr\n"
-		flush $mov
-		tkwait variable ready_flag
-		.movie_progress.progress step
-		insert
-	}
-	puts $mov "q\n"
-	flush $mov
-	close $mov
+        {
+                puts "Render Frame $i/[ llength $movie_list ]"
+                set ready_flag 0
+                set center_real [ lindex [ lindex $movie_list $i ] 0 ]
+                set center_imaginary [ lindex [ lindex $movie_list $i ] 1 ]
+                set scale [ lindex [ lindex $movie_list $i ] 2 ]
+                puts "p${center_real},${center_imaginary}\ns${scale}\nr\n"
+                puts $mov "p${center_real},${center_imaginary}\ns${scale}\nr\n"
+                flush $mov
+                tkwait variable ready_flag
+                .movie_progress.progress step
+                insert
+        }
+        puts $mov "q\n"
+        flush $mov
+        close $mov
 
-	wm withdraw .movie_progress
+        wm withdraw .movie_progress
 }
 
 ## Function for making a progress bar
@@ -478,7 +493,6 @@ proc first_rendering {} \
 	set output_parameter [ $output_parameter_win.entry get ]
 	set render_parameter [ $render_parameter_win.entry get ]
 	set precision [ $precision_win.entry get ]
-	set geometry [ $geometry_win.entry get ]
 	
 	update
 
@@ -517,6 +531,14 @@ proc first_rendering {} \
 	if { $output_parameter == "" } \
 	{
 		if { [ error_message "WARNING!!!: You did not specify output parameters but some output functions need parameters!!!" "This output function do not need parameters" "Cancel" ] == 1 } { return 1 }
+	}
+
+	## If output is aa we have to set the geometry to another value
+	if { $output_method == "aa" } \
+	{
+		set aa_x_geom [ expr [ winfo screenwidth . ] / 9 ]
+		set aa_y_geom [ expr [ winfo screenwidth . ] / 11 ]
+		set geometry "${aa_x_geom}x${aa_y_geom}" 
 	}
 
 	## Call tinyfract with standard parameters(fractal parameters are only used if necessary).

@@ -256,7 +256,6 @@ void render_recurse(render_t* handle)
 	/* Get memory for points. */
 	handle->points=malloc((sizeof(ordinal_number_t))*handle->geometry.width*handle->geometry.height);
 	/* Calculate square_size. */
-	fprintf(stderr,"Hallo\n");
 	square_size=1<<handle->param;
 
 	/* Calculate number of squares. */

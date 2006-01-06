@@ -68,6 +68,26 @@ float B(float H,float S,float Br)
 	return Br+Bh(H)*S*(1-Br);
 }
 
+/* This function allocates memory for frame with necessary data, */
+void alloc_frame(mpeg_t* context)
+{
+	uint8_t* picture_buf;
+	int      size;
+	
+	/* Get memory for the picture. */
+	context->picture=avcodec_alloc_frame();
+
+	size=context->movie_context->width*context->movie_context->height;
+	picture_buf=malloc((size * 3) / 2); /* size for YUV 420 */
+
+	context->picture->data[0]=picture_buf;
+	context->picture->data[1]=context->picture->data[0]+size;
+	context->picture->data[2]=context->picture->data[1] + size / 4;
+	context->picture->linesize[0]=context->movie_context->width;
+	context->picture->linesize[1]=context->movie_context->width / 2;
+	context->picture->linesize[2]=context->movie_context->width / 2;
+}
+
 /* Constructor and destructor for mpeg output. */
 static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 {
@@ -107,22 +127,22 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	output_args=strtok(args,"-");
 	filename=strtok(NULL,"-");
 	#ifdef DEBUG
-	fprintf(stderr,"Output args: %s\n",output_args);
-	fprintf(stderr,"Safing file: %s\n",filename);
+	fprintf(stderr,"Output Mpeg: Output args: %s\n",output_args);
+	fprintf(stderr,"Output Mpeg: Safing file: %s\n",filename);
 	#endif
 
 	
 	/* Check if parameters were given. */
 	if(output_args==NULL)
 	{
-		fprintf(stderr,"Please insert output parameters or you typed it wrong\n");
+		fprintf(stderr,"You did not type correctly output parameters!\n");
 		exit(EXIT_FAILURE);
 	}
 
 	/* Check safing file was given. */
 	if(filename==NULL)
 	{
-		fprintf(stderr,"Please insert a safing file for the image or you typed it wrong.\n");
+		fprintf(stderr,"You did not type correctly a safing file for the image!\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -180,12 +200,12 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 			}	
 		}
 
-		/* Now we write the color information, the RGB Value is translatet into YCbCr. */
+		/* Now we write the color information, the RGB Value is translatet into YUV 4:2:0. Unfortunetly is the translation is not correct!!! */
 		context->colors[i].y=0.299*(R(H,S,Br)*255)+0.587*(G(H,S,Br)*255)+0.114*(B(H,S,Br)*255);
 		context->colors[i].cb=(((B(H,S,Br)*255)-context->colors[i].y)/1.772)+0.5;
 		context->colors[i].cr=(((R(H,S,Br)*255)-context->colors[i].y)/1.402)+0.5;
 		#ifdef DEBUG
-		fprintf(stderr,"Color for step %d is: Y: %f Cb: %f Cr: %f\n",i,context->colors[i].y,context->colors[i].cb,context->colors[i].cr);
+		fprintf(stderr,"Output Mpeg: Color for step %d is: Y: %f Cb: %f Cr: %f\n",i,context->colors[i].y,context->colors[i].cb,context->colors[i].cr);
 		#endif
 	}
 
@@ -257,14 +277,14 @@ void destructor_mpeg(mpeg_t* handle)
 
 	/* get the delayed frames */
 	#ifdef DEBUG
-	fprintf(stderr,"Get the delayed frames.\n");
+	fprintf(stderr,"Output Mpeg: Get the delayed frames.\n");
 	#endif
 	for(i=handle->number_of_frames;handle->out_size;i++) {
 		fflush(stdout);
 
 		handle->out_size=avcodec_encode_video(handle->movie_context,handle->outbuf,handle->outbuf_size,NULL);
 		#ifdef DEBUG
-		fprintf(stderr,"write frame %3d (size=%5d)\n",i,handle->out_size);
+		fprintf(stderr,"Output Mpeg: Write frame %3d (size=%5d)\n",i,handle->out_size);
 		#endif
 		fwrite(handle->outbuf,1,handle->out_size,handle->output_file);
 	}
@@ -328,13 +348,13 @@ void fill_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 void flush_viewport_mpeg(mpeg_t* handle, button_event_t* position)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"Encode a picture.\n");
+	fprintf(stderr,"Output Mpeg: Encode a picture.\n");
 	#endif
 
 	/* encode the image */
 	handle->out_size=avcodec_encode_video(handle->movie_context,handle->outbuf,handle->outbuf_size,handle->picture);
 	#ifdef DEBUG
-	fprintf(stderr,"encoding frame (size=%5d)\n",handle->out_size);
+	fprintf(stderr,"Output Mpeg: Encoding frame (size=%5d)\n",handle->out_size);
 	#endif
 	fwrite(handle->outbuf,1,handle->out_size,handle->output_file);
 

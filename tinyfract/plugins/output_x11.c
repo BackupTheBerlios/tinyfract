@@ -228,17 +228,21 @@ void remap_x11(x11_t* handle)
 {
 	XWindowAttributes attributes;
 	
-	/* Unmap and map the viewport. */
+
 	#ifdef DEBUG
 	fprintf(stderr,"Unmap and Map the viewport.\n");
 	#endif
+
 	/* First get the window attributes. */
 	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
+	
 	/* Put double buffer onto the window. */
 	XCopyArea(handle->dpy,handle->pxmap,handle->win,handle->gc,
 		0,0,attributes.width,attributes.height,0,0);
+	
 	/* Send request to the server */
 	XFlush(handle->dpy);
+	
 	/* Map and unmap */
 	XUnmapWindow(handle->dpy,handle->win);
 	XMapWindow(handle->dpy,handle->win);
@@ -259,7 +263,6 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 	XMapWindow(handle->dpy,handle->win);
 
 	/* Get window size. */
-//	fprintf(stderr,"Hallo\n");
 	XGetWindowAttributes(handle->dpy,handle->win,&attributes);
 	for(;;)
 	{
@@ -273,7 +276,6 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 			case ButtonPress:
 			
 				#ifdef DEBUG
-				fprintf(stderr,"c%d,%d\n",event.xbutton.x,event.xbutton.y);
 				fprintf(stderr,"Button Pressed: %d\n", event.xbutton.button);
 				#endif
 				switch (position->type=event.xbutton.button)
@@ -294,11 +296,14 @@ void flush_viewport_x11(x11_t* handle, button_event_t* position)
 			case PropertyNotify:
 			case ReparentNotify:
 			case ConfigureNotify:
+				#ifdef DEBUG
+				fprintf(stderr,"Remap the window.\n");
+				#endif
 				/* Put double buffer onto the window. */
 				XCopyArea(handle->dpy,handle->pxmap,handle->win,handle->gc,
 						0,0,attributes.width,attributes.height,0,0);
 				/* Send request to the server */
-			        XFlush(handle->dpy);
+				XFlush(handle->dpy);
 				break;	
 			default:
 				break;

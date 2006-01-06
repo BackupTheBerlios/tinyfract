@@ -278,8 +278,10 @@ int main(int argc, char* argv[])
 	fprintf(stderr,"Initializing fractal facility.\n");
 	#endif
 	
+//	if (!(fractal=(*fractal_facility->facility.fractal.constructor)
+//		(fractal_facility->facility.fractal.iteration_steps,prec,fractal_args)))
 	if (!(fractal=(*fractal_facility->facility.fractal.constructor)
-		(fractal_facility->facility.fractal.iteration_steps,prec,fractal_args)))
+		(400,prec,fractal_args)))
 	{
 		perror("could not initialize fractal facility");
 		exit(EXIT_FAILURE);
