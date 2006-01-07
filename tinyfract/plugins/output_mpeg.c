@@ -13,8 +13,8 @@
 typedef struct
 {
 	float y;
-	float cb;
-	float cr;
+	float u;
+	float v;
 } yuv_t;
 
 typedef struct
@@ -27,6 +27,8 @@ typedef struct
 	int             out_size;
 	int             outbuf_size;
 	int             number_of_frames;
+	int*            value_cache;
+	int             last_point;
 } mpeg_t;	
 
 
@@ -156,6 +158,8 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	/* Just for help now. */
 	iteration_steps=mod[0]*mod[1]*mod[2];
 
+	/* Allocate memory for the value cache */
+	context->value_cache=malloc(sizeof(int)*(dimension.width+2));
 
 	/* Alloc memory for colors. */
 	context->colors=malloc(sizeof(yuv_t)*iteration_steps);
@@ -200,12 +204,12 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 			}	
 		}
 
-		/* Now we write the color information, the RGB Value is translatet into YUV 4:2:0. Unfortunetly is the translation is not correct!!! */
-		context->colors[i].y=0.299*(R(H,S,Br)*255)+0.587*(G(H,S,Br)*255)+0.114*(B(H,S,Br)*255);
-		context->colors[i].cb=(((B(H,S,Br)*255)-context->colors[i].y)/1.772)+0.5;
-		context->colors[i].cr=(((R(H,S,Br)*255)-context->colors[i].y)/1.402)+0.5;
+		/* Now we write the color information, the RGB Value is translatet into YUV 4:4:4. */
+		context->colors[i].y=0.3*(R(H,S,Br)*255)+0.59*(G(H,S,Br)*255)+0.11*(B(H,S,Br)*255);
+		context->colors[i].u=(B(H,S,Br)*255)-context->colors[i].y;
+		context->colors[i].v=(R(H,S,Br)*255)-context->colors[i].y;
 		#ifdef DEBUG
-		fprintf(stderr,"Output Mpeg: Color for step %d is: Y: %f Cb: %f Cr: %f\n",i,context->colors[i].y,context->colors[i].cb,context->colors[i].cr);
+		fprintf(stderr,"Output Mpeg: Color for step %d is: Y: %f Cb: %f Cr: %f\n",i,context->colors[i].y,context->colors[i].u,context->colors[i].v);
 		#endif
 	}
 
@@ -261,10 +265,10 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 
 	context->picture->data[0]=picture_buf;
 	context->picture->data[1]=context->picture->data[0]+size;
-	context->picture->data[2]=context->picture->data[1] + size / 4;
+	context->picture->data[2]=context->picture->data[1]+size/4;
 	context->picture->linesize[0]=context->movie_context->width;
-	context->picture->linesize[1]=context->movie_context->width / 2;
-	context->picture->linesize[2]=context->movie_context->width / 2;
+	context->picture->linesize[1]=context->movie_context->width/2;
+	context->picture->linesize[2]=context->movie_context->width/2;
 
 
 	/* Return the handle. */
@@ -279,6 +283,7 @@ void destructor_mpeg(mpeg_t* handle)
 	#ifdef DEBUG
 	fprintf(stderr,"Output Mpeg: Get the delayed frames.\n");
 	#endif
+
 	for(i=handle->number_of_frames;handle->out_size;i++) {
 		fflush(stdout);
 
@@ -296,10 +301,11 @@ void destructor_mpeg(mpeg_t* handle)
 	handle->outbuf[3] = 0xb7;
 
 	fwrite(handle->outbuf,1,4,handle->output_file);	
-	
+
 	/* Free the handle and all other space */
 	fclose(handle->output_file);
 	free(handle->outbuf);
+	free(handle->value_cache);
 
 	avcodec_close(handle->movie_context);
 	free(handle->movie_context);
@@ -317,10 +323,27 @@ void blit_rect_mpeg(mpeg_t* handle, const view_position_t position, const view_d
 /* Put pixel into the image viewport. */
 void put_pixel_mpeg(mpeg_t* handle, const view_position_t position, const pixel_value value)
 {
+	int uv_value;
+
 	/* Put a pixel into the picture buffer. */
-	handle->picture->data[0][position.y*handle->picture->linesize[0]+position.x]=handle->colors[value].y*3;
-	handle->picture->data[1][position.y*handle->picture->linesize[1]/2+position.x/2]=handle->colors[value].cb;
-	handle->picture->data[2][position.y*handle->picture->linesize[2]/2+position.x/2]=handle->colors[value].cr;
+	handle->picture->data[0][position.y*handle->picture->linesize[0]+position.x]=handle->colors[value].y;
+
+	if(position.y % 2 == 0)
+	{
+		handle->value_cache[position.x]=value;
+		return;
+	}
+
+	if(position.x % 2 == 0)
+	{
+		handle->last_point=value;
+		return;
+	}
+
+	uv_value=(value+handle->last_point+handle->value_cache[position.x]+handle->value_cache[position.x-1])/4;
+
+	handle->picture->data[1][((position.y-1)/2)*handle->picture->linesize[1]+((position.x-1)/2)]=handle->colors[uv_value].u;
+	handle->picture->data[2][((position.y-1)/2)*handle->picture->linesize[2]+((position.x-1)/2)]=handle->colors[uv_value].v;
 }
 
 /* Fill rectangle in image with color. */
