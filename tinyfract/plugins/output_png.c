@@ -1,4 +1,5 @@
 #include <gd.h>
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -159,7 +160,7 @@ static png_t* constructor_png(const view_dimension_t dimension, char args[])
 			}	
 		}
 		
-		context->colors[i]=gdImageColorAllocate(context->im,R(H,S,Br)*COLOR_CEILING,G(H,S,Br)*COLOR_CEILING,B(H,S,Br)*COLOR_CEILING);
+		context->colors[i]=gdImageColorAllocate(context->im,round((R(H,S,Br)+1)*127.5),round((G(H,S,Br)+1)*127.5),round((B(H,S,Br)+1)*127.5));
 	}
 
 	/* Return the handle. */
