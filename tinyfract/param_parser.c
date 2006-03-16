@@ -94,41 +94,38 @@ int make_vinumber(complex_number_t* virtual_position,view_position_t real_positi
 int calc_movie_params(char* params,long long int prec)
 {
 	/* Volatile Datas. */
-	real_number_t center1_real;
-	real_number_t center1_imaginary;
-	real_number_t center2_real;
-	real_number_t center2_imaginary;
-	real_number_t scale1;
-	real_number_t scale2;
-	real_number_t center_real_shift;
-	real_number_t center_imaginary_shift;
-	real_number_t scale_shift;
-	real_number_t calc_help;
-	real_number_t new_center_real;
-	real_number_t new_center_imaginary;
-	real_number_t new_scale;
-	char*         help;
-	char*         add_movie_list_format_string;
-	char*         params_tok;
-	unsigned int  steps;
-	unsigned int  i;
+	complex_number_t center1;
+	complex_number_t center2;
+	real_number_t    scale1;
+	real_number_t    scale2;
+	complex_number_t center_shift;
+	real_number_t    scale_shift;
+	real_number_t    calc_help;
+	complex_number_t new_center;
+	real_number_t    new_scale;
+	char*            help;
+	char*            add_movie_list_format_string;
+	char*            params_tok;
+	int              steps;
+	unsigned int     i;
 
 	/* Set default precision and initialize the vars. */
 	mpf_set_default_prec(sizeof(char)*prec);
 
-	mpf_init(center1_real);
-	mpf_init(center1_imaginary);
-	mpf_init(center2_real);
-	mpf_init(center2_imaginary);
+	mpf_init(Re(center1));
+	mpf_init(Im(center1));
+	mpf_init(Re(center2));
+	mpf_init(Im(center2));
+	fprintf(stderr,"Nach init: %p\n",Im(center2));
 	mpf_init(scale1);
 	mpf_init(scale2);
-	mpf_init(center_real_shift);
-	mpf_init(center_imaginary_shift);
+	mpf_init(Re(center_shift));
+	mpf_init(Im(center_shift));
 	mpf_init(scale_shift);
-	mpf_init(calc_help);
-	mpf_init(new_center_real);
-	mpf_init(new_center_imaginary);
+	mpf_init(Re(new_center));
+	mpf_init(Im(new_center));
 	mpf_init(new_scale);
+	mpf_init(calc_help);
 
 	/* Copy the main string into the tok string. */
 	params_tok=malloc(sizeof(params));
@@ -136,13 +133,13 @@ int calc_movie_params(char* params,long long int prec)
 
 	/* Split the main string and set the vars. */
 	help=strtok(params_tok,",");
-	mpf_set_str(center1_real,help,10);
+	mpf_set_str(Re(center1),help,10);
 	help=strtok(NULL,",");
-	mpf_set_str(center1_imaginary,help,10);
+	mpf_set_str(Im(center1),help,10);
 	help=strtok(NULL,",");
-	mpf_set_str(center2_real,help,10);
+	mpf_set_str(Re(center2),help,10);
 	help=strtok(NULL,",");
-	mpf_set_str(center2_imaginary,help,10);
+	mpf_set_str(Im(center2),help,10);
 	help=strtok(NULL,",");
 	mpf_set_str(scale1,help,10);
 	help=strtok(NULL,",");
@@ -150,23 +147,26 @@ int calc_movie_params(char* params,long long int prec)
 	help=strtok(NULL,",");
 	sscanf(help,"%d",&steps);
 
+	#ifdef DEBUG
+	gmp_printf("Center1: %F.100f %F.100f\nCenter2: %F.100f %F.100f\nScale1: %F.100f\nScale2: %F.100f\nSteps: %d\n",Re(center1),Im(center1),Re(center2),Im(center2),scale1,scale2,steps);
+	#endif
+
 	/* Get the difference between the single movie fraktals and calculate the shift. */
 	/* Center real shift. */
-	mpf_sub(calc_help,center2_real,center1_real);
+	mpf_sub(calc_help,Re(center2),Re(center1));
 	/* The first picture should be the first given picture, so we have to increment the steps. The movie is the one frame longer then requested but */
 	/* I think that this is not a very important problem. */
 	steps++;
-	mpf_div_ui(center_real_shift,calc_help,steps);
+	mpf_div_ui(Re(center_shift),calc_help,steps);
 
 	/* Center imaginary shift. */
-	mpf_sub(calc_help,center2_imaginary,center1_imaginary);
-	mpf_div_ui(center_imaginary_shift,calc_help,steps);
+	mpf_sub(calc_help,Im(center2),Im(center1));
+	mpf_div_ui(Im(center_shift),calc_help,steps);
 
 	/* Scale shift. */
 	mpf_sub(calc_help,scale2,scale1);
 	mpf_div_ui(scale_shift,calc_help,steps);
 
-	gmp_printf("%F.100f\n",scale_shift);
 	/* Set the format string. */
 	add_movie_list_format_string=malloc(sizeof(char)*52+sizeof(long long int)*3);
 	sprintf(add_movie_list_format_string,"add_movie_list %%F.%lldf %%F.%lldf %%F.%lldf %%d\n",prec,prec,prec);
@@ -175,90 +175,35 @@ int calc_movie_params(char* params,long long int prec)
 	for(i=0;i<=steps;i++)
 	{
 		/* New center real. */
-		mpf_mul_ui(new_center_real,center_real_shift,i);
-		mpf_add(new_center_real,center1_real,new_center_real);
+		mpf_mul_ui(Re(new_center),Re(center_shift),i);
+		mpf_add(Re(new_center),Re(center1),Re(new_center));
 
 		/* New center imaginary. */
-		mpf_mul_ui(new_center_imaginary,center_imaginary_shift,i);
-		mpf_add(new_center_imaginary,new_center_imaginary,center1_imaginary);
+		mpf_mul_ui(Im(new_center),Im(center_shift),i);
+		mpf_add(Im(new_center),Im(new_center),Im(center1));
 
 		/* New scale. */
 		mpf_mul_ui(new_scale,scale_shift,i);
 		mpf_add(new_scale,new_scale,scale1);
 
-		gmp_printf(add_movie_list_format_string,new_center_real,new_center_imaginary,new_scale,steps);
-//		gmp_printf("%F.100f\n",new_center_real);
-//		gmp_printf("%F.100f\n",new_center_imaginary);
-//		gmp_printf("%F.100f\n",new_scale);
-//		gmp_printf("%d\n",steps);
+		gmp_printf(add_movie_list_format_string,Re(new_center),Im(new_center),new_scale,steps);
 		fflush(stdout);
 	}
-
+	
 	/* Clear the multiple precision vars. */
-	mpf_clear(center1_real);
-	mpf_clear(center1_imaginary);
-	mpf_clear(center2_real);
-//	mpf_clear(center2_imaginary); /* Produziert einen glibc double free or corruption. */
+	mpf_clear(Re(center1));
+	mpf_clear(Im(center1));
+	mpf_clear(Re(center2));
+	mpf_clear(Im(center2)); // hier gibts immer SEGVs, wenn vorher gerendert wurde
 	mpf_clear(scale1);
 	mpf_clear(scale2);
-	mpf_clear(center_real_shift);
-	mpf_clear(center_imaginary_shift);
+	mpf_clear(Re(center_shift));
+	mpf_clear(Im(center_shift));
 	mpf_clear(scale_shift);
-	mpf_clear(new_center_real);
-	mpf_clear(new_center_imaginary);
+	mpf_clear(Re(new_center));
+	mpf_clear(Im(new_center));
 	mpf_clear(new_scale);
 	mpf_clear(calc_help);
-
-	return 0;
-}
-
-int render_and_flush(
-		const plugin_facility_t* render_facility,
-		complex_number_t         render_center,
-		view_dimension_t         render_geometry,
-		real_number_t            render_scale,
-		const plugin_facility_t* render_fractal_facility,
-		const plugin_facility_t* render_flush_output_facility,
-		void*                    render_fractal,
-		void*                    render_output,
-		char                     render_args[],
-		long long int            render_prec,
-		void*                    flush_output,
-		button_event_t*          flush_button_press)
-{
-	void* render;	/* Handle for render facility. */
-
-	/* Initialize the render facility. */
-	#ifdef DEBUG
-	fprintf(stderr,"Initializing render facility.\n");
-	#endif
-	if (!(render=(*render_facility->facility.render.constructor)
-		(render_center,
-		 render_geometry,
-		 render_scale,
-		 render_fractal_facility,render_flush_output_facility,render_fractal,render_output,render_args,render_prec)))
-	{
-		perror("Could not initialize render facility");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Render the fractal. */
-	#ifdef DEBUG
-	fprintf(stderr,"Rendering the fractal.\n");
-	#endif
-	(*render_facility->facility.render.render_function)(render);
-
-	/* Flush and close the output viewport. */
-	#ifdef DEBUG
-	fprintf(stderr,"Flushing viewport.\n");
-	#endif
-	(*render_flush_output_facility->facility.output.flush_viewport_function)(flush_output,flush_button_press);
-
-	/* Free the render facility used. */
-	#ifdef DEBUG
-	fprintf(stderr,"Closing render facility.\n");
-	#endif
-	(*render_facility->facility.render.destructor)(render);
 
 	return 0;
 }
