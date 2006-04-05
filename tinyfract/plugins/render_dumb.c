@@ -109,7 +109,7 @@ void render_dumb(render_t* handle)
 	shift.y=handle->geometry.height/2;
 	for(render_position.y=0;render_position.y<handle->geometry.height;render_position.y++)
 	{
-		printf("progress %d %d\n",render_position.y+1,handle->geometry.width);
+		printf("progress %d %d\n",render_position.y+1,handle->geometry.height);
 		fflush(stdout);
 		for(render_position.x=0;render_position.x<handle->geometry.width;render_position.x++)
 		{
