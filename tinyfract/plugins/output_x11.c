@@ -11,12 +11,14 @@
 typedef struct
 {
 	XGCValues gcpxval;
-	GC        gcpx;
-	GC 	  gc;
-	Display*  dpy;
-	Window    win;
- 	Pixmap    pxmap;
-	XColor    colors[MAX_COLORS];
+	GC               gcpx;
+	GC               gc;
+	Display*         dpy;
+	Window           win;
+ 	Pixmap           pxmap;
+	XColor           colors[MAX_COLORS];
+	int*             iterations;
+	view_dimension_t geometry;
 } x11_t;	
 
 
@@ -188,39 +190,81 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 			&context->colors[i]);
 	}
 	
+	/* Get memory to safe the iteration steps. */
+	context->iterations=malloc(sizeof(ordinal_number_t)*dimension.width*dimension.height);
+
+	/* Copy the geometry */
+	context->geometry.width=dimension.width;
+	context->geometry.height=dimension.height;
+
 	/* Return the handle. */
 	return context;
 }
 
 void destructor_x11(x11_t* handle)
 {
+	free(handle->iterations);
 	free(handle);
 }
+
+		
 
 /* Blit rectangle from pixelbuffer to X11 viewport. */
 void blit_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, pixel_value values[])
 {
 }
 
-
-/* Fill rectangle in X11 viewport with color. */
-void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
-{
-	/* Set color for next operation. */
-	XSetForeground(handle->dpy,handle->gcpx,handle->colors[value].pixel);
-	
-	/* Fill a rectangle. */
-	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y,dimension.width,dimension.height);
-}
-
 /* Put pixel into X11 viewport. */
 void put_pixel_x11(x11_t* handle, const view_position_t position, const pixel_value value)
 {
 	/* Set color for next operation. */
-	XSetForeground(handle->dpy,handle->gcpx,handle->colors[value].pixel);
+//	XSetForeground(handle->dpy,handle->gcpx,handle->colors[value].pixel);
 
 	/* Put a pixel into the double buffer. */
-	XDrawPoint(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y);
+//	XDrawPoint(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y);
+
+	/* Put a pixel into the map. */
+	*(handle->iterations+position.y*handle->geometry.width+position.x)=value;
+}
+
+
+/* Fill rectangle in X11 viewport with color. */
+void fill_rect_x11(x11_t* handle, const view_position_t position, const view_dimension_t dimension, const pixel_value value)
+{
+	view_position_t map_position;
+
+	/* Set color for next operation. */
+//	XSetForeground(handle->dpy,handle->gcpx,handle->colors[value].pixel);
+	
+	/* Fill a rectangle. */
+//	XFillRectangle(handle->dpy,handle->pxmap,handle->gcpx,position.x,position.y,dimension.width,dimension.height);
+
+	/* Put a rectangle into the map. */
+	for(map_position.x=position.x;map_position.x<=position.x+dimension.width;map_position.x++)
+	{
+		for(map_position.y=position.y;map_position.y<=position.y+dimension.height;map_position.y++)
+		{
+			*(handle->iterations+map_position.y*handle->geometry.width+map_position.x)=value;
+		}
+	}
+}
+
+void put_map_in_buffer(x11_t* handle)
+{
+	int x;
+	int y;
+
+	for(x=0;x<=handle->geometry.width;x++)
+	{
+		for(y=0;y<=handle->geometry.height;y++)
+		{
+			/* Set color for next operation. */
+			XSetForeground(handle->dpy,handle->gcpx,handle->colors[*(handle->iterations+y*handle->geometry.width+x)].pixel);
+
+			/* Put a pixel into the double buffer. */
+			XDrawPoint(handle->dpy,handle->pxmap,handle->gcpx,x,y);
+		}
+	}
 }
 
 /* Remap the window. */
@@ -248,12 +292,90 @@ void remap_x11(x11_t* handle)
 	XMapWindow(handle->dpy,handle->win);
 }
 
+/* Function wich allocates colors and flushes the viewport. */
+void new_output_parameter(char* args,x11_t* handle)
+{
+	int    i;
+	float  H;
+	float  S;
+	float  Br;
+
+	char   des[3];
+	int    mod[3];
+	float  thres[3];
+	
+	int    iteration_steps;
+
+	/* Scan the color string. */
+	sscanf(args,"%c%d,%f%c%d,%f%c%d,%f",
+		&des[0],&mod[0],&thres[0],
+		&des[1],&mod[1],&thres[1],
+		&des[2],&mod[2],&thres[2]);
+
+	/* Just for help now. */
+	iteration_steps=mod[0]*mod[1]*mod[2];
+	
+	/* Allocate colors */
+	for(i=0;i<iteration_steps;i++)
+	{
+		int x=i;
+		int d;
+		
+		for (d=0;d<3;d++)
+		{
+			if (thres[d]<0 || thres[d]>=1)
+			{
+				fprintf(stderr,"Illegal output format %s.\n",args);
+				exit(EXIT_FAILURE);
+			}
+			switch (des[d])
+			{
+				case 'h':
+				case 'H':
+					H=(float)(x%mod[d])/mod[d]+thres[d];
+					if (H>1) H=H-1;
+					x=x/mod[d];
+					break;
+				case 's':
+				case 'S':
+					S=(float)(x%mod[d])/mod[d]+thres[d];
+					if (S>1) S=S-1;
+					x=x/mod[d];
+					break;
+				case 'b':
+				case 'B':
+					Br=(float)(x%mod[d])/mod[d]+thres[d];
+					if (Br>1) Br=Br-1;
+					x=x/mod[d];
+					break;
+				default: 
+					fprintf(stderr,"Illegal output format %s.\n",args);
+					exit(EXIT_FAILURE);
+			}	
+		}
+		
+		handle->colors[i].red=  R(H,S,Br)*COLOR_CEILING;
+		handle->colors[i].green=G(H,S,Br)*COLOR_CEILING;
+		handle->colors[i].blue= B(H,S,Br)*COLOR_CEILING;
+		
+		handle->colors[i].flags=DoRed|DoGreen|DoBlue;
+		XAllocColor(handle->dpy,DefaultColormap(handle->dpy,DefaultScreen(handle->dpy)),
+			&handle->colors[i]);
+	}
+
+	put_map_in_buffer(handle);
+	remap_x11(handle);
+}
+
 /* Flush X11 viewport */
 void flush_viewport_x11(x11_t* handle, button_event_t* position)
 {
 	XEvent event;
 	XWindowAttributes attributes;
-	
+
+	/* Put the map into the double buffer. */
+	put_map_in_buffer(handle);
+
 	/* We want to get MapNotify events for our window. */
 	//XSelectInput(handle->dpy,handle->win,StructureNotifyMask);
 	XSelectInput(handle->dpy,handle->win,0xffffff);
@@ -332,6 +454,7 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 				flush_viewport_function: (const plugin_output_flush_viewport_function_t*) &flush_viewport_x11,
 				remap_function:          (const plugin_output_remap_function_t*) &remap_x11,
 				put_pixel_function:      (const plugin_output_put_pixel_function_t*) &put_pixel_x11,
+				new_output_parameter_function: (const plugin_output_new_parameter_function_t*) &new_output_parameter,
 			}
 		}
 	},

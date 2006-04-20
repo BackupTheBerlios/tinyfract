@@ -452,11 +452,16 @@ proc scale_cmd { new_scale } \
 $parser alias scale scale_cmd
 
 ## Function for displaying the new output_parameters in the fractal
-proc display_output_parameter { TINYFRACT_FD } \
+proc display_output_parameter { x } \
 {
-	global h_mod h_thres b_mod b_thres s_mod s_thres
+	global h_mod h_thres b_mod b_thres s_mod s_thres TINYFRACT_FD
 
-	puts "OH${h_mod},${h_thres}B{$b_mod},${b_thres}S${s_mod},${s_thres}"
+	set color_string "OH${h_mod},${h_thres}B${b_mod},${b_thres}S${s_mod},${s_thres}"
+
+	puts $color_string
+	puts $TINYFRACT_FD
+	puts $TINYFRACT_FD "$color_string"
+	flush $TINYFRACT_FD
 }
 
 
