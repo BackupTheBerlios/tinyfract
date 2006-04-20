@@ -51,7 +51,7 @@ typedef void (plugin_output_put_pixel_function_t)
 	 const view_position_t position,
 	 const pixel_value value);
 
-typedef void (plugin_output_new_output_parameter_function_t)
+typedef void (plugin_output_new_parameter_function_t)
 	(char* args,
 	 void* handle);
 	

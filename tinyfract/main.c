@@ -394,7 +394,7 @@ int main(int argc, char* argv[])
 					#ifdef DEBUG
 					fprintf(stderr,"%s: New Output Parameter: %s",argv[0],output_parameter_string);
 					#endif
-					(*outout_facility->facility.output.new_output_parameter_function)(ouput);
+					(*output_facility->facility.output.new_output_parameter_function)(output_parameter_string,output);
 					break;
 				case 'q':
 					goto exit_func;
