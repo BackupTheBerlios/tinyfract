@@ -32,6 +32,12 @@ set geometry "${def_width}x${def_height}"
 set plugin_path "$env(PWD)/plugins"
 set output_method x11
 set output_parameter "H10,.5S10,.5B10,.5"
+set h_mod 10
+set h_thres 0.5
+set b_mod 10
+set b_thres 0.5
+set s_mod 10
+set s_thres 0.5
 set render_method recurse
 set render_parameter "3"
 set precision "100"
@@ -72,6 +78,9 @@ option add *Button.foreground black 100
 
 option add *Menu.background lightgrey 100
 option add *Menu.foreground black 100
+
+option add *Scale.width 10 100
+option add *Scale.command { display_output_parameter } 100
 
 ## Dialog for an error
 iwidgets::messagedialog .md \
@@ -208,14 +217,14 @@ proc insert {} \
 
 	## First rendering insert
 	$fractal_parameter_win.entry delete 0 end
-	$output_parameter_win.entry delete 0 end
+#	$output_parameter_win.entry delete 0 end
 	$render_parameter_win.entry delete 0 end
 	$geometry_win.entry delete 0 end
 	$plugin_path_win.entry delete 0 end
 	$precision_win.entry delete 0 end
 	
 	$fractal_parameter_win.entry insert 0 $fractal_parameter
-	$output_parameter_win.entry insert 0 $output_parameter
+#	$output_parameter_win.entry insert 0 $output_parameter
 	$render_parameter_win.entry insert 0 $render_parameter
 	$geometry_win.entry insert 0 $geometry
 	$plugin_path_win.entry insert 0 $plugin_path
@@ -268,7 +277,7 @@ proc load_options {} \
 ## Function for saving parameters in a file. Those file can be loaded by the function load_options
 proc safe_options {} \
 {
-	global fractal plugin_path output_method output_parameter render_method render_parameter precision fractal_parameter center_real_win center_imaginary_win scale_win iteration_steps_win
+	global fractal plugin_path output_method h_mod h_thres b_mod b_thres s_mod s_thres render_method render_parameter precision fractal_parameter center_real_win center_imaginary_win scale_win iteration_steps_win
 
 	set path [ tk_getSaveFile ]
 	if { $path != "" } \
@@ -281,15 +290,16 @@ proc safe_options {} \
 	set scale [ $scale_win.entry get ]
 	set iteration_steps [ $iteration_steps_win.entry get ]
 
-	puts "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_parameter {$fractal_parameter}\n"
-	puts $path_fd "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine output_parameter {$output_parameter}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_parameter {$fractal_parameter}\n"
+	puts "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine h_mod {$h_mod}\ndefine h_thres {$h_thres}\ndefine b_mod {$b_mod}\ndefine b_thres {$b_thres}\ndefine s_mod {$s_mod}\ndefine s_thres {$s_thres}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_parameter {$fractal_parameter}\n"
+
+	puts $path_fd "define fractal {$fractal}\ndefine plugin_path {$plugin_path}\ndefine output_method {$output_method}\ndefine h_mod {$h_mod}\ndefine h_thres {$h_thres}\ndefine b_mod {$b_mod}\ndefine b_thres {$b_thres}\ndefine s_mod {$s_mod}\ndefine s_thres {$s_thres}\ndefine render_method {$render_method}\ndefine render_parameter {$render_parameter}\ndefine precision {$precision}\ndefine scale {$scale}\ndefine center_real {$center_real}\ndefine center_imaginary {$center_imaginary}\ndefine iteration_steps {$iteration_steps}\ndefine fractal_parameter {$fractal_parameter}\n"
 	close $path_fd
 }
 
 ## Function for saving as a png
 proc safe_png {} \
 {
-	global ready_flag fractal geometry plugin_path output_method output_parameter render_method render_parameter precision fractal_parameter parser center_real_win center_imaginary_win scale_win iteration_steps_win
+	global ready_flag fractal geometry plugin_path output_method h_mod h_thres b_mod b_thres s_mod s_thres  render_method render_parameter precision fractal_parameter parser center_real_win center_imaginary_win scale_win iteration_steps_win
 
 	set ready_flag 0
 
@@ -304,13 +314,13 @@ proc safe_png {} \
 
 	if { $fractal_parameter == "" } \
 	{
-		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision"
-		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision" "r+" ]
+		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -OH${h_mod},${h_thres}B${b_mod},${b_thres}S${s_mod},${s_thres}-$path -r$render_method -R$render_parameter -p$precision"
+		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -OH${h_mod},${h_thres}B${b_mod},${b_thres}S${s_mod},${s_thres}-$path -r$render_method -R$render_parameter -p$precision" "r+" ]
 		fileevent $png readable "eventdata $png"
 	} else \
 	{
-		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision -F$fractal_parameter"
-		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -O$output_parameter-$path -r$render_method -R$render_parameter -p$precision -F$fractal_parameter" "r+" ]
+		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -OH${h_mod},${h_thres}B${b_mod},${b_thres}S${s_mod},${s_thres}-$path -r$render_method -R$render_parameter -p$precision -F$fractal_parameter"
+		set png [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -opng -OH${h_mod},${h_thres}B${b_mod},${b_thres}S${s_mod},${s_thres}-$path -r$render_method -R$render_parameter -p$precision -F$fractal_parameter" "r+" ]
 		fileevent $png readable "eventdata $png"
 	}
 
@@ -321,6 +331,7 @@ proc safe_png {} \
 }
 
 ## Function wich records a fractal movie
+#####################################################################################################################################################################Diese Funktion muss bearbeitet werden!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!##################################################################################################################################################################################################
 proc record_movie { TINYFRACT_FD first_fd second_fd name } \
 {
 	global win4 rec_interp rec_test center_real1 center_imaginary1 scale1 center_real2 center_imaginary2 scale2 fractal1 center_real center_imaginary scale fractal plugin_path output_parameter render_method render_parameter precision  movie_list movie_flag ready_flag
@@ -429,7 +440,7 @@ proc new_args_cmd { new_center_real new_center_imaginary new_iteration_steps } \
 $parser alias new_args new_args_cmd
 
 ## Function for reading new scale
-proc scale { new_scale } \
+proc scale_cmd { new_scale } \
 {
 	global scale scale_test
 
@@ -438,7 +449,15 @@ proc scale { new_scale } \
 	insert
 	set scale_test "1"
 }
-$parser alias scale scale
+$parser alias scale scale_cmd
+
+## Function for displaying the new output_parameters in the fractal
+proc display_output_parameter { TINYFRACT_FD } \
+{
+	global h_mod h_thres b_mod b_thres s_mod s_thres
+
+	puts "OH${h_mod},${h_thres}B{$b_mod},${b_thres}S${s_mod},${s_thres}"
+}
 
 
 ## This function is for rendering a new fractal if no new call of tinyfract is needed
@@ -486,7 +505,7 @@ proc soft_render { TINYFRACT_FD mode } \
 ## This function is for rendering a new fractal if a new call of tinyfract is needed
 proc hard_render { mode  } \
 {
-	global TINYFRACT_FD test geometry fractal fractal_parameter plugin_path output_method output_parameter render_method render_parameter precision geometry fractal_parameter_win output_parameter_win render_parameter_win precision_win geometry_win
+	global TINYFRACT_FD test geometry fractal fractal_parameter plugin_path output_method h_mod h_thres b_mod b_thres s_mod s_thres render_method render_parameter precision geometry fractal_parameter_win output_parameter_win render_parameter_win precision_win geometry_win
 
 
 	if { $precision == "" } \
@@ -521,10 +540,10 @@ proc hard_render { mode  } \
 		if { [ error_message "WARNING!!!: You did not specify render parameters but some render functions need parameters!!!" "This render function do not need parameters" "Cancel" ] == 1 } { return 1 }
 	}
 	
-	if { $output_parameter == "" } \
-	{
-		if { [ error_message "WARNING!!!: You did not specify output parameters but some output functions need parameters!!!" "This output function do not need parameters" "Cancel" ] == 1 } { return 1 }
-	}
+#	if { $output_parameter == "" } \
+#	{
+#		if { [ error_message "WARNING!!!: You did not specify output parameters but some output functions need parameters!!!" "This output function do not need parameters" "Cancel" ] == 1 } { return 1 }
+#	}
 
 	## If output is aa we have to set the geometry to another value
 	if { $output_method == "aa" } \
@@ -537,12 +556,12 @@ proc hard_render { mode  } \
 	## Call tinyfract with standard parameters(fractal parameters are only used if given).
 	if { $fractal_parameter == "" } \
 	{
-		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O${output_parameter}@[ winfo id .fractal ] -r$render_method -R$render_parameter -p$precision" "r+" ]
-		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -O$output_parameter@[ winfo id .fractal ] -r$render_method -R$render_parameter -p$precision"
+		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -OB${b_mod},${b_thres}H${h_mod},${h_thres}S${s_mod},${s_thres}@[ winfo id .left.fractal ] -r$render_method -R$render_parameter -p$precision" "r+" ]
+		puts "./tinyfract -f$fractal -g$geometry -P$plugin_path -o$output_method -OB${b_mod},${b_thres}H${h_mod},${h_thres}S${s_mod},${s_thres}@[ winfo id .left.fractal ] -r$render_method -R$render_parameter -p$precision"
 	} else \
 	{
-		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -F$fractal_parameter -g$geometry -P$plugin_path -o$output_method -O$output_parameter@[ winfo id .fractal ] -r$render_method -R$render_parameter -p$precision" "r+" ]
-		puts "./tinyfract -f$fractal -F$fractal_parameter -g$geometry -P$plugin_path -o$output_method -O$output_parameter@[ winfo id .fractal ] -r$render_method -R$render_parameter -p$precision"
+		set TINYFRACT_FD [ open "|./tinyfract -f$fractal -F$fractal_parameter -g$geometry -P$plugin_path -o$output_method -OB${b_mod},${b_thres}H${h_mod},${h_thres}S${s_mod},${s_thres}@[ winfo id .left.fractal ] -r$render_method -R$render_parameter -p$precision" "r+" ]
+		puts "./tinyfract -f$fractal -F$fractal_parameter -g$geometry -P$plugin_path -o$output_method -OB${b_mod},${b_thres}H${h_mod},${h_thres}S${s_mod},${s_thres}p@[  winfo id .left.fractal ] -r$render_method -R$render_parameter -p$precision"
 	}
 
 	fileevent $TINYFRACT_FD readable { eventdata $TINYFRACT_FD }
@@ -556,16 +575,16 @@ proc hard_render { mode  } \
 ## This function decides if tinyfract has to be called new or not
 proc render { TINYFRACT_FD mode } \
 {
-	global HARD_RENDER_FLAG fractal_parameter output_parameter render_parameter plugin_path precision old_fractal_parameter old_output_parameter old_render_parameter old_plugin_path old_precision fractal_parameter_win output_parameter_win render_parameter_win precision_win
+	global HARD_RENDER_FLAG fractal_parameter render_parameter plugin_path precision old_fractal_parameter old_render_parameter old_plugin_path old_precision fractal_parameter_win output_parameter_win render_parameter_win precision_win
 
 	## Get the parameters
 	set fractal_parameter [ $fractal_parameter_win.entry get ]
-	set output_parameter [ $output_parameter_win.entry get ]
+#	set output_parameter [ $output_parameter_win.entry get ]
 	set render_parameter [ $render_parameter_win.entry get ]
 	set precision [ $precision_win.entry get ]
 	
 	## Check if we have to open a new pipe to tinyfract
-	if { $HARD_RENDER_FLAG == 0 && $fractal_parameter == $old_fractal_parameter && $output_parameter == $old_output_parameter && $render_parameter == $old_render_parameter && $plugin_path == $old_plugin_path && $precision == $old_precision } \
+	if { $HARD_RENDER_FLAG == 0 && $fractal_parameter == $old_fractal_parameter && $render_parameter == $old_render_parameter && $plugin_path == $old_plugin_path && $precision == $old_precision } \
 	{
 		## NO, its no new pipe to tinyfract needed. So we call the "soft" render function
 		puts "Soft render"
@@ -577,7 +596,7 @@ proc render { TINYFRACT_FD mode } \
 		puts "Hard render"
 		## Set first the new old parameters
 		set old_fractal_parameter $fractal_parameter
-		set old_output_parameter $output_parameter
+#		set old_output_parameter $output_parameter
 		set old_render_parameter $render_parameter
 		set old_plugin_path $plugin_path
 		set old_precision $precision
@@ -626,11 +645,11 @@ iwidgets::combobox .right.output_method \
 	-selectioncommand { set output_method [ .right.output_method getcurselection ] ; set HARD_RENDER_FLAG 1 }
 .right.output_method insert list end x11 aa
 .right.output_method selection set $output_method
-iwidgets::labeledwidget .right.output_parameter \
-	-labeltext "Output parameter:" \
-	-labelpos w
-set output_parameter_win [ .right.output_parameter childsite ]
-entry $output_parameter_win.entry
+#iwidgets::labeledwidget .right.output_parameter \
+#	-labeltext "Output parameter:" \
+#	-labelpos w
+#set output_parameter_win [ .right.output_parameter childsite ]
+#entry $output_parameter_win.entry
 iwidgets::combobox .right.render_method \
 	-labeltext "Render method:" \
 	-labelpos w \
@@ -704,11 +723,91 @@ set scale_win [ .right.scale childsite ]
 entry $scale_win.entry
 
 
+## Build Widgets in the left frame
 ## Frame for displaing the fractal
-frame .fractal \
+frame .left.fractal \
 	-width $def_width \
 	-height $def_height \
 	-container 1
+
+## Output Prameters scales
+iwidgets::labeledwidget .left.h \
+	-labeltext "H:" \
+	-labelpos w
+
+set h_win [ .left.h childsite ]
+
+scale $h_win.scale_mod \
+	-from 0 \
+	-to 100 \
+	-resolution 1 \
+	-digits 1 \
+	-variable h_mod \
+	-label "Mod:" \
+	-orient horizontal
+
+scale $h_win.scale_thres \
+	-from 0 \
+	-to 1 \
+	-resolution 0.01 \
+	-digits 3 \
+	-variable h_thres \
+	-label "Thres:" \
+	-orient horizontal
+
+
+iwidgets::labeledwidget .left.b \
+	-labeltext "B:" \
+	-labelpos w
+
+set b_win [ .left.b childsite ]
+
+scale $b_win.scale_mod \
+	-from 0 \
+	-to 100 \
+	-resolution 1 \
+	-digits 1 \
+	-variable b_mod \
+	-label "Mod:" \
+	-orient horizontal
+
+
+scale $b_win.scale_thres \
+	-from 0 \
+	-to 1 \
+	-resolution 0.01 \
+	-digits 3 \
+	-variable b_thres \
+	-label "Thres" \
+	-orient horizontal
+
+
+iwidgets::labeledwidget .left.s \
+	-labeltext "S:" \
+	-labelpos w
+
+set s_win [ .left.s childsite ]
+
+scale $s_win.scale_mod \
+	-from 0 \
+	-to 100 \
+	-resolution 1 \
+	-digits 1 \
+	-variable s_mod \
+	-label "Mod:" \
+	-orient horizontal
+
+
+scale $s_win.scale_thres \
+	-from 0 \
+	-to 1 \
+	-resolution 0.01 \
+	-digits 3 \
+	-variable s_thres \
+	-label "Thres:" \
+	-orient horizontal
+
+
 
 ## Build the progress bar
 iwidgets::feedback .right.progress \
@@ -796,8 +895,8 @@ pack .right.fractal -fill both -expand 1
 pack .right.fractal_parameter -fill both -expand 1
 pack $fractal_parameter_win.entry -side left -fill both -expand 1
 pack .right.output_method -fill both -expand 1
-pack .right.output_parameter -fill both -expand 1
-pack $output_parameter_win.entry -side left -fill both -expand 1
+#pack .right.output_parameter -fill both -expand 1
+#pack $output_parameter_win.entry -side left -fill both -expand 1
 pack .right.render_method  -fill both -expand 1
 pack .right.render_parameter -fill both -expand 1
 pack $render_parameter_win.entry -side left -fill both -expand 1
@@ -833,6 +932,21 @@ pack .right.buttons -expand 1 -fill both
 pack .right.progress -expand 1 -fill both
 
 
+## Pack Widgets in the left frame
+pack .left.h -expand 1 -fill x
+pack $h_win.scale_mod -expand 1 -fill x -side left
+pack $h_win.scale_thres -expand 1 -fill x -side left
+
+pack .left.s -expand 1 -fill x
+pack $s_win.scale_mod -expand 1 -fill x -side left
+pack $s_win.scale_thres -expand 1 -fill x -side left
+
+pack .left.b -fill x
+pack $b_win.scale_mod -expand 1 -fill x -side left
+pack $b_win.scale_thres -expand 1 -fill x -side left
+
+
+pack .left.fractal
 
 
 ## Pack the Record-Dialog widgets
@@ -857,11 +971,8 @@ pack .movie_progress.cancel -expand 1 -fill both
 
 ## Pack the helper frames
 pack .topic -expand 1 -fill both
-pack .fractal -side left
-
-
-pack .right -side top -expand 1 -fill both
-#pack .left -side left -expand 1 -fill both
+pack .right -side right -expand 1 -fill both
+pack .left -side left
 
 
 

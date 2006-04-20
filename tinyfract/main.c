@@ -62,6 +62,7 @@ int main(int argc, char* argv[])
 	real_number_t    convert;
 	char*            scale_str;
 	char*            center_str;
+	char*            output_parameter_string;
 	char             command;
 	char*            format_string;
 	char*            div_mul_string;
@@ -325,9 +326,10 @@ int main(int argc, char* argv[])
 	mpf_init(div_mul_arg1);
 	mpf_init(div_mul_erg);
 	
-	/* Get memory for the center and scale string. */
+	/* Get memory for the center, scale and output_parameter string. */
 	scale_str=malloc(sizeof(char)*(prec+2));
 	center_str=malloc(sizeof(char)*(prec*2+3));
+	output_parameter_string=malloc(sizeof(char)*30);
 
 	/* Make the format strings for multiple precision. */
 	format_string=malloc(sizeof(char)*20+sizeof(long long int)*3+sizeof(ordinal_number_t));
@@ -386,6 +388,12 @@ int main(int argc, char* argv[])
 					fprintf(stderr,"%s:Calculate movie params\n",argv[0]);
 					#endif
 					calc_movie_params(movie_string,prec);
+					break;
+				case 'O':
+					scanf("%s",output_parameter_string);
+					#ifdef DEBUG
+					fprintf(stderr,"%s: New Output Parameter: %s",argv[0],output_parameter_string);
+					#endif
 					break;
 				case 'q':
 					goto exit_func;
@@ -490,6 +498,7 @@ exit_func:
 	free(format_string);
 	free(div_mul_string);
 	free(scale_format_string);
+	free(output_parameter_string);
 	free(movie_string);
 
 	/* Free the multiple precision variables. */
