@@ -456,6 +456,8 @@ proc display_output_parameter { x } \
 {
 	global h_mod h_thres b_mod b_thres s_mod s_thres TINYFRACT_FD
 
+	if { $TINYFRACT_FD == 0 } { return }
+
 	set color_string "OH${h_mod},${h_thres}B${b_mod},${b_thres}S${s_mod},${s_thres}"
 
 	puts $color_string
