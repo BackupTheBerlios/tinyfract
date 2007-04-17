@@ -1,22 +1,26 @@
-.PHONY: all clean
-
-CC=gcc
-CFLAGS=-O3 -fPIC -DDEBUG
-LD=gcc
-LDFLAGS=
-RM=/bin/rm
+.PHONY: all install clean distclean
 
 
-all: fractal_mandelbrot.so fractal_lambda.so output_x11.so output_aa.so output_png.so output_mpeg.so render_recurse.so render_pix.so render_dumb.so
+## Setup library/plugin compilation.
+CFLAGS+=-fPIC
+
+
+## Command line targets.
+all: $(addsuffix .so,$(PLUGINS))
+
+install:
+	$(INSTALL) -d -m 755 $(INSTALL_PATH)/lib/tinyfract
+	$(INSTALL) -c -m 755 -t $(INSTALL_PATH)/lib/tinyfract $(addsuffix .so,$(PLUGINS))
 
 clean:
 	$(RM) -f *.o *.so
 
-output_aa.o: output_aa.c ../plugin.h ../common.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-output_aa.so: output_aa.o
-	$(LD) $(LDFLAGS) -o $@ -shared -laa $^ 
+distclean:
+	$(RM) -f $(addprefix $(INSTALL_PATH)/share/tinyfract/,$(addsuffix .so,$(PLUGINS)))
 
+
+
+## Fractal plugins.
 fractal_lambda.o: fractal_lambda.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 fractal_lambda.so: fractal_lambda.o
@@ -26,6 +30,13 @@ fractal_mandelbrot.o: fractal_mandelbrot.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 fractal_mandelbrot.so: fractal_mandelbrot.o
 	$(LD) $(LDFLAGS) -o $@ -lgmp -shared $^ 
+
+
+## Output plugins.
+output_aa.o: output_aa.c ../plugin.h ../common.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+output_aa.so: output_aa.o
+	$(LD) $(LDFLAGS) -o $@ -shared -laa $^ 
 
 output_x11.o: output_x11.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -40,10 +51,12 @@ output_png.so: output_png.o
 output_mpeg.o: output_mpeg.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 output_mpeg.so: output_mpeg.o
-	$(LD) $(LDFLAGS) -o $@ -shared /usr/lib/libavcodec.a /usr/lib/libavformat.a $^ 
+	$(LD) $(LDFLAGS) -o $@ -shared -lavcodec -lavformat $^ 
 #output_mpeg.so: output_mpeg.o
 #	$(LD) $(LDFLAGS) -o $@ -shared -lavcodec -lavformat $^ 
 
+
+## Render plugins.
 render_dumb.o: render_dumb.c ../plugin.h ../common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 render_dumb.so: render_dumb.o
