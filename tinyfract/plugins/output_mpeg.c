@@ -97,9 +97,9 @@ static mpeg_t* constructor_mpeg(const view_dimension_t dimension, char args[])
 	AVCodec* codec;
 	int      i;
 	int      size;
-	float    H;
-	float    S;
-	float    Br;
+	float    H=0;
+	float    S=0;
+	float    Br=0;
 	char     des[3];
 	int      mod[3];
 	float    thres[3];
@@ -410,6 +410,6 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 			}
 		}
 	},
-	{ plugin_facility_end }
+	{ type: plugin_facility_end }
 };
 

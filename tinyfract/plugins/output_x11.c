@@ -65,16 +65,18 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 {
 	x11_t* context;
 	int    i;
-	float  H;
-	float  S;
-	float  Br;
+	float  H=0;
+	float  S=0;
+	float  Br=0;
 
 	char   des[3];
 	int    mod[3];
 	float  thres[3];
 	
 	int    iteration_steps;
-	Window window_id;
+
+	Window       window_id;
+	unsigned int window_id_helper;
 
 	char* args_tok;
 	char* color_str;
@@ -115,11 +117,12 @@ static x11_t* constructor_x11(const view_dimension_t dimension, const char args[
 		window_id=DefaultRootWindow(context->dpy);
 	} else
 	{
-		sscanf(id_str,"0x%x",&window_id);
+		sscanf(id_str,"0x%x",&window_id_helper);
+		window_id=(Window)window_id_helper;
 	}
 
 	#ifdef DEBUG
-	fprintf(stderr,"Window id is 0x%x\n",window_id);
+	fprintf(stderr,"Window id is 0x%x\n",(unsigned int)window_id);
 	#endif
 	
 	/* Create the window. */
@@ -296,9 +299,9 @@ void remap_x11(x11_t* handle)
 void new_output_parameter(char* args,x11_t* handle)
 {
 	int    i;
-	float  H;
-	float  S;
-	float  Br;
+	float  H=0;
+	float  S=0;
+	float  Br=0;
 
 	char   des[3];
 	int    mod[3];
@@ -458,6 +461,6 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 			}
 		}
 	},
-	{ plugin_facility_end }
+	{ type: plugin_facility_end }
 };
 

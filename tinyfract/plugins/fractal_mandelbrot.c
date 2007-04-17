@@ -1,7 +1,10 @@
-#include <gmp.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <gmp.h>
+
 #include "../common.h"
 #include "../plugin.h"
 #include "../param_parser.h"
@@ -316,6 +319,6 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 			}
 		}
 	},
-	{ plugin_facility_end }
+	{ type: plugin_facility_end }
 };
 

@@ -1,7 +1,9 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
 #include <gmp.h>
 
 #include "../common.h"
@@ -37,12 +39,6 @@ static render_t* constructor(
 		long long int            prec)
 {
 	render_t*        context;
-	int              x_render;
-	int              y_render;
-	view_position_t  render_position;
-	complex_number_t complex_position;
-	real_number_t    scaling_factor;
-	view_position_t  shift;
 
 	/* Check if parameter was given, */
 	if(args==NULL)
@@ -99,7 +95,6 @@ ordinal_number_t cache_calculator(render_t* handle,const view_position_t render_
 	view_position_t   shift;
 	real_number_t     scaling_factor;
 	mpf_t             help_mpf;
-	ordinal_number_t  steps;
 	mpf_t             help_two;
 
 	mpf_set_default_prec(sizeof(char)*handle->prec);
@@ -225,18 +220,12 @@ void fill_square(render_t* handle,const view_position_t start_point,const int sq
 void render_recurse(render_t* handle)
 {
 	/* Volatile datas */
-	view_position_t   render_position;
 	view_position_t   start_point;
 	int               x_square;
 	int               y_square;
 	int               x_count;
 	int               y_count;
 	int               square_size;
-	char*             format;
-	ordinal_number_t  *help;
-	char*             format_string_center_real;
-	char*             format_string_center_imaginary;
-	char*             format_string_scale;
 
 # if 0
 	/* Print infos like center and scale */
@@ -297,6 +286,6 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 			}
 		}
 	},
-	{ plugin_facility_end }
+	{ type: plugin_facility_end }
 };
 

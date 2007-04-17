@@ -1,6 +1,8 @@
 #ifndef TINYFRACTCOMMON_H
 #define TINYFRACTCOMMON_H
 
+#include <gmp.h>
+
 /*
  * Some useful macros.
  */
@@ -9,8 +11,6 @@
 #define Re(z) (z).real_part
 #define Im(z) (z).imaginary_part
 
-
-#include <gmp.h>
 
 /*
  * Some useful typedefs. Useful, if we ever have to change it, maybe when

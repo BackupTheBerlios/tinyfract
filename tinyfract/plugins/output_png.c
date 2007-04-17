@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "../common.h"
 #include "../plugin.h"
+
 
 #define MAX_COLORS 65536
 #define COLOR_CEILING 65536 
@@ -61,9 +63,9 @@ static png_t* constructor_png(const view_dimension_t dimension, char args[])
 {
 	png_t* context;
 	int    i;
-	float  H;
-	float  S;
-	float  Br;
+	float  H=0;
+	float  S=0;
+	float  Br=0;
 
 	char   des[3];
 	int    mod[3];
@@ -160,7 +162,11 @@ static png_t* constructor_png(const view_dimension_t dimension, char args[])
 			}	
 		}
 		
-		context->colors[i]=gdImageColorAllocate(context->im,round((R(H,S,Br)+1)*127.5),round((G(H,S,Br)+1)*127.5),round((B(H,S,Br)+1)*127.5));
+		context->colors[i]=gdImageColorAllocate(
+			context->im,
+			round((R(H,S,Br)+1)*127.5),
+			round((G(H,S,Br)+1)*127.5),
+			round((B(H,S,Br)+1)*127.5));
 	}
 
 	/* Return the handle. */
@@ -233,6 +239,6 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 			}
 		}
 	},
-	{ plugin_facility_end }
+	{ type: plugin_facility_end }
 };
 

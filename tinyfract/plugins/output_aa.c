@@ -1,6 +1,8 @@
 #include <aalib.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
 #include "../common.h"
 #include "../plugin.h"
 
@@ -56,7 +58,7 @@ void destructor_aa(aa_t* handle)
 
 unsigned char colormap(const pixel_value value)
 {
-	return 255-(value*10)&0xff;
+	return (255-(value*10))&0xff;
 }
 
 /* Blit rectangle from pixelbuffer to asciiart viewport. */
@@ -109,6 +111,6 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 			}
 		}
 	},
-	{ plugin_facility_end }
+	{ type: plugin_facility_end }
 };
 

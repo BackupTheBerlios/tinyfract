@@ -1,7 +1,10 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <gmp.h>
 
 #include "../common.h"
 #include "../param_parser.h"
@@ -87,9 +90,9 @@ void render_dumb(render_t* handle)
 	format_string_center_imaginary=malloc(sizeof(char)*8+sizeof(long long int));
 	format_string_scale=malloc(sizeof(char)*12+sizeof(long long int));
 
-	sprintf(format_string_center_real,"R:%%F.%df\n",handle->prec);
-	sprintf(format_string_center_imaginary,"I:%%F.%df\n",handle->prec);
-	sprintf(format_string_scale,"Scale:%%F.%df\n",handle->prec);
+	sprintf(format_string_center_real,"R:%%F.%lldf\n",handle->prec);
+	sprintf(format_string_center_imaginary,"I:%%F.%lldf\n",handle->prec);
+	sprintf(format_string_scale,"Scale:%%F.%lldf\n",handle->prec);
 
 	gmp_fprintf(stderr,format_string_center_real,Re(handle->center));
 	gmp_fprintf(stderr,format_string_center_imaginary,Im(handle->center));
@@ -150,6 +153,6 @@ volatile const plugin_facility_t tinyfract_plugin_facilities[]=
 			}
 		}
 	},
-	{ plugin_facility_end }
+	{ type: plugin_facility_end }
 };
 
