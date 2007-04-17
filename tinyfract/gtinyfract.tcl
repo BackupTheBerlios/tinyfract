@@ -1,4 +1,7 @@
-#!/usr/bin/wish
+#!/bin/sh
+#\
+exec wish "$0" "$@"
+
 
 ## Include Iwidgets
 package require Itcl
@@ -29,7 +32,7 @@ set def_height $def_width
 ## Set Standard parameters
 set fractal mandelbrot
 set geometry "${def_width}x${def_height}"
-set plugin_path "$env(PWD)/plugins"
+set plugin_path "/usr/local/lib/tinyfract"
 set output_method x11
 set output_parameter "H10,.5S10,.5B10,.5"
 set h_mod 10
@@ -63,28 +66,25 @@ wm geometry . [ winfo screenwidth . ]x[winfo screenheight . ]
 ## Withdraw .
 #wm withdraw .
 
-## Make nice colors for the interface
-option add *Menubutton.background lightgrey 100
-option add *Menubutton.foreground black 100
 
-option add *Label.background lightgrey 100
-option add *Label.foreground black 100
+## Use nice colors for the interface.
+#option add *Menubutton.background lightgray widgetDefault
+#option add *Menubutton.foreground black widgetDefault
+#option add *Label.background lightgray widgetDefault
+#option add *Label.foreground black widgetDefault
+#option add *Entry.background lightgray widgetDefault
+#option add *Entry.foreground black widgetDefault
+#option add *Button.background lightgray widgetDefault
+#option add *Button.foreground black widgetDefault
+#option add *Menu.background lightgray widgetDefault
+#option add *Menu.foreground black widgetDefault
+#option add *Scale.width 10 widgetDefault
+#option add *Scale.command { display_output_parameter } widgetDefault
 
-option add *Entry.background lightgrey 100
-option add *Entry.foreground black 100
 
-option add *Button.background lightgrey 100
-option add *Button.foreground black 100
-
-option add *Menu.background lightgrey 100
-option add *Menu.foreground black 100
-
-option add *Scale.width 10 100
-option add *Scale.command { display_output_parameter } 100
-
-## Dialog for an error
+## Error dialog.
 iwidgets::messagedialog .md \
-	-title "Error" \
+	-title "Tinyfract error!" \
 	-bitmap error \
 	-modality application
 .md hide Help
@@ -92,10 +92,14 @@ iwidgets::messagedialog .md \
 .md buttonconfigure Cancel -text "Cancel"
 .md deactivate
 
-## Dialog for searching a file
+
+## File dialog.
 iwidgets::extfileselectiondialog .file \
 	-modality application
 .file deactivate
+
+
+
 
 ## Necessary functions for recording a fractal movie
 ## Flags
@@ -130,6 +134,8 @@ proc define_rec { name value } \
         }
 }
 $rec_interp alias define define_rec
+
+
 
 ## Dialog for recording a fractal movie
 toplevel .record
