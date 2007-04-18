@@ -20,6 +20,7 @@ TINYFRACT_BUILD=jk1
 
 CFLAGS= \
 	-std=c99 -Wall -O2 -DDEBUG \
+	-DTINYFRACT_PLUGIN_PATH=\"$(INSTALL_PATH)/lib/tinyfract\" \
 	-DVERSION_INFO=\"$(TINYFRACT_VERSION)\" \
 	-DBUILD_INFO=\"$(TINYFRACT_BUILD)\" \
 	-DBUILD_USER="\"$(shell whoami)\"" \

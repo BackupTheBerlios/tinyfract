@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 	for (;;)
 	{
 //		c=getopt_long(argc,argv,"c:f:F:g:i:o:O:P:r:R:p:s:S:",long_options,&option_index);
-		c=getopt_long(argc,argv,"f:F:g:o:O:P:r:R:p:S:",long_options,&option_index);
+		c=getopt_long(argc,argv,"f:F:g:o:O:p:P:r:R:S:",long_options,&option_index);
 		if (c==-1) break;
 
 		switch (c)
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
 					"See http://www.gnu.org/licenses/gpl.txt for details.\n\n"
 					"USAGE: %s [OPTIONS]\n"
 //					"  -c, --center=             Center of the picture in the complex plane. Format: Re,Im.\n"
-					"                              Defaults to fractal function's choice.\n"
+//					"                              Defaults to fractal function's choice.\n"
 					"  -f, --fractal-type=       Select the fractal formula. A plugin has to provide the\n"
 					"                              formula. Default is prompting the user.\n"
 					"  -F, --fractal-parameters= Specifies additional fractal parameters, if the\n"
@@ -179,12 +179,13 @@ int main(int argc, char* argv[])
 					"  -g, --geometry=           Output picture size in pixels. Format: Width x Height.\n"
 					"                              Defaults to output plugin's choice.\n"
 //					"  -i, --iteration-steps=    Sets the maximum count of iterations per point.\n"
-					"                              Defaults to fractal function's choice.\n"
+//					"                              Defaults to fractal function's choice.\n"
 					"  -o, --output-method=      Specifies the output method. A plugin has to provide it.\n"
 					"                              If no output method is given a default value from the\n"
 					"                              environment variable TINYFRACT_OUTPUT_METHOD will be used.\n"
 					"  -O, --output-parameters=  Specifies additional parameters passed to the output\n"
 					"                              function.\n"
+					"  -p, --precision=          Set the number of signifcant digits.\n"
 					"  -P, --plugin-path=        Specifies a path to search for plugins. If no plugin path\n"
 					"                              is given a default value from the environment variable\n"
 					"                              TINYFRACT_PLUGIN_PATH will be used.\n"
@@ -194,10 +195,9 @@ int main(int argc, char* argv[])
 //					"  -s, --scale=              Scale: Baseline with of the rendered picture in the complex\n"
 					"  -S  --scale-factor=       Set the zomming factor for auto zoom. Default value is 10.\n"
 					"                              coordinate system. Defaults to fractal function's choice.\n"
-					"  -p, --precision=          Set the number of Nachkommastellen.\n"
 					"      --help                Show this help and exit.\n"
 					"      --version             Show version information and exit.\n\n"
-					"Example: %s -fmandelbrot --geom=640x480 -i170 -c-0.5,0.8 -s1.3\n"
+					"Example: %s -fmandelbrot -rrecurse -ox11 -O0,0 -g640x480 -p20\n"
 					,argv[0],argv[0]); 
 				exit(EXIT_FAILURE);
 		}
@@ -221,8 +221,12 @@ int main(int argc, char* argv[])
 	{
 		if (!(plugin_path=getenv("TINYFRACT_PLUGIN_PATH")))
 		{
-			fprintf(stderr,"%s: You have to specify a plugin path.\n",argv[0]);
-			exit(EXIT_FAILURE);
+			if (!(plugin_path=malloc(strlen(TINYFRACT_PLUGIN_PATH)+1)))
+			{
+				perror("Error allocating memory for TINYFRACT_PLUGIN_PATH");
+				exit(EXIT_FAILURE);
+			}
+			strcpy(plugin_path,TINYFRACT_PLUGIN_PATH);
 		}
 	}
 	
